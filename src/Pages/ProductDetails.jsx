@@ -4,7 +4,7 @@ import {useParams, useNavigate} from "react-router-dom";
 
 import { CartContext } from "./CartContext";
 
-import { getProducts, deleteProduct} from "../api/productApi";
+import { getProducts, deleteProduct} from "../Api/ProductApi";
 
 
 export default function ProductDetails() {
@@ -1157,3 +1157,4 @@ export default function ProductDetails() {
     );
 
 }
+

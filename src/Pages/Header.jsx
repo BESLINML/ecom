@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import Category from "./Category";
-import { getProducts } from "../api/productApi";
+import { getProducts } from "../Api/ProductApi";
 
 
 export default function Header() {
@@ -1459,3 +1459,4 @@ export default function Header() {
     );
 
 }
+

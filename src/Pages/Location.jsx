@@ -4,7 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
     getProducts,
     deleteProduct
-} from "../api/productApi";
+} from "../Api/ProductApi";
 
 
 export default function Location() {
@@ -781,3 +781,4 @@ export default function Location() {
     );
 
 }
+

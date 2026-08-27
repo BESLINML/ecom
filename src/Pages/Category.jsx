@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { getProducts } from "../api/productApi";
+import { getProducts } from "../Api/ProductApi";
 
 export default function Category() {
 
@@ -737,3 +737,4 @@ export default function Category() {
     );
 
 }
+

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
-import { getProducts } from "../api/productApi";
-import { getBanners } from "../api/BannerApi";
+import { getProducts } from "../Api/ProductApi";
+import { getBanners } from "../Api/BannerApi";
 
 import CategoryProducts from "./CategoryProducts";
 
@@ -896,3 +896,4 @@ export default function Home() {
     );
 
 }
+

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { deleteProduct } from "../api/productApi";
+import { deleteProduct } from "../Api/ProductApi";
 
 
 // =====================================================
@@ -668,3 +668,4 @@ export function ProductCard({
     );
 
 }
+

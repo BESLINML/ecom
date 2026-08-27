@@ -84,3 +84,4 @@ export const deleteBanner = async (id) => {
 
     return response.data;
 };
+

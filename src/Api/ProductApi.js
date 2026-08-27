@@ -215,3 +215,4 @@ export const uploadImage = async (imageFile) => {
 
     return response.text();
 };
+

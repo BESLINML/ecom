@@ -10,14 +10,14 @@ import {
     updateProduct,
     deleteProduct,
     uploadImage
-} from "../api/ProductApi";
+} from "../Api/ProductApi";
 
 import {
     getBanners,
     addBanner,
     updateBanner,
     deleteBanner
-} from "../api/BannerApi";
+} from "../Api/BannerApi";
 
 
 // =====================================================
@@ -1964,3 +1964,4 @@ export default function Admin() {
     );
 
 }
+

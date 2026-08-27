@@ -42,3 +42,4 @@ export const registerUser = async (
 
     return response.data;
 };
+

@@ -30,16 +30,12 @@ public class ImageController {
                         .body("Please select an image");
             }
 
-            // Create uploads folder
-            Path uploadPath =
-                    Paths.get(uploadDir);
+            Path uploadPath = Paths.get(uploadDir);
 
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
             }
 
-
-            // Get original extension
             String originalName =
                     file.getOriginalFilename();
 
@@ -54,31 +50,21 @@ public class ImageController {
                         );
             }
 
-
-            // Create unique filename
             String fileName =
                     UUID.randomUUID().toString()
                     + extension;
 
-
-            // File location
             Path filePath =
                     uploadPath.resolve(fileName);
 
-
-            // Save image
             Files.copy(
                     file.getInputStream(),
                     filePath,
                     StandardCopyOption.REPLACE_EXISTING
             );
 
-
-            // URL returned to React
             String imageUrl =
-                    "http://localhost:8080/uploads/"
-                    + fileName;
-
+                    "/uploads/" + fileName;
 
             return ResponseEntity.ok(imageUrl);
 

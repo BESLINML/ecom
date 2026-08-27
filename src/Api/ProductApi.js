@@ -1,7 +1,7 @@
-const API_URL = "http://localhost:8080/api/products";
+const API_URL = "https://ecom-2-2ayw.onrender.com/api/products";
 
 const IMAGE_API_URL =
-    "http://localhost:8080/api/images/upload";
+    "https://ecom-2-2ayw.onrender.com/api/images/upload";
 
 
 // =====================================================

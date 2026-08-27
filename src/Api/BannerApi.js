@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:8080/api/banners";
+const API_URL = "https://ecom-2-2ayw.onrender.com/api/banners";
 
 
 // =====================================================

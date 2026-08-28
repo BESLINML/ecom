@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "https://ecom-2-2ayw.onrender.com/auth";
+const API_URL = "https://ecom-1-um8s.onrender.com/api/products";
 
 
 // =========================
@@ -42,4 +42,3 @@ export const registerUser = async (
 
     return response.data;
 };
-

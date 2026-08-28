@@ -1,7 +1,7 @@
-const API_URL = "https://ecom-2-2ayw.onrender.com/api/products";
+const API_URL = "https://ecom-1-um8s.onrender.com/api/products";
 
 const IMAGE_API_URL =
-    "https://ecom-2-2ayw.onrender.com/api/images/upload";
+    "https://ecom-1-um8s.onrender.com/api/images/upload";
 
 
 // =====================================================
@@ -215,4 +215,3 @@ export const uploadImage = async (imageFile) => {
 
     return response.text();
 };
-

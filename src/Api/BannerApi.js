@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "https://ecom-2-2ayw.onrender.com/api/banners";
+const API_URL = "https://ecom-1-um8s.onrender.com/api/products";
 
 
 // =====================================================
@@ -84,4 +84,3 @@ export const deleteBanner = async (id) => {
 
     return response.data;
 };
-

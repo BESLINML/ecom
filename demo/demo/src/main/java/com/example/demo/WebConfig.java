@@ -14,7 +14,8 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addMapping("/**")
                 .allowedOrigins(
                         "http://localhost:5173",
-                        "https://dynamic-jelly-ad6cf3.netlify.app"
+                        "https://dynamic-jelly-ad6cf3.netlify.app",
+                        "https://ecommerce-ebbc4.web.app"
                 )
                 .allowedMethods(
                         "GET",

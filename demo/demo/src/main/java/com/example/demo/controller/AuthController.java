@@ -11,7 +11,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/auth")
-@CrossOrigin(origins = "https://dynamic-jelly-ad6cf3.netlify.app")
 public class AuthController {
 
     @Autowired

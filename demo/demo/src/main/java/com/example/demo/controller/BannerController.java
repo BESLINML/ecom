@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/banners")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "https://dynamic-jelly-ad6cf3.netlify.app")
 public class BannerController {
 
     private final BannerRepository bannerRepository;

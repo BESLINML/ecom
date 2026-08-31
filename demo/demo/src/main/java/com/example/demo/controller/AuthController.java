@@ -143,14 +143,13 @@ public class AuthController {
     }
 
 
-    @GetMapping("/debug-users")
-public ResponseEntity<?> debugUsers() {
+@GetMapping("/debug-db")
+public ResponseEntity<?> debugDb() {
 
     return ResponseEntity.ok(
-            userRepository.findAll()
-                    .stream()
-                    .map(user -> user.getEmail())
-                    .toList()
+            java.util.Map.of(
+                    "users", userRepository.count()
+            )
     );
 }
 }

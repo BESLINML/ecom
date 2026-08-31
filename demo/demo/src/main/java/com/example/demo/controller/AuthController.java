@@ -1,3 +1,4 @@
+
 package com.example.demo.controller;
 
 import com.example.demo.entity.User;
@@ -13,7 +14,7 @@ import java.util.Optional;
 @RequestMapping("/auth")
 public class AuthController {
 
-    @Autowired
+    @Autowiredw
     private UserRepository userRepository;
 
 
@@ -31,7 +32,6 @@ public class AuthController {
                         user.getEmail()
                 );
 
-
         if (existingUser.isPresent()) {
 
             return ResponseEntity
@@ -39,9 +39,6 @@ public class AuthController {
                     .body("Email already exists");
 
         }
-
-
-        // Normal users by default
 
         if (
                 user.getRole() == null ||
@@ -52,20 +49,14 @@ public class AuthController {
 
         }
 
-
         User savedUser =
                 userRepository.save(user);
 
-
-        // Don't return password
-
         savedUser.setPassword(null);
-
 
         return ResponseEntity.ok(
                 savedUser
         );
-
     }
 
 
@@ -78,46 +69,76 @@ public class AuthController {
             @RequestBody User loginUser
     ) {
 
+        System.out.println(
+                "LOGIN EMAIL: [" +
+                loginUser.getEmail() +
+                "]"
+        );
+
         Optional<User> optionalUser =
                 userRepository.findByEmail(
                         loginUser.getEmail()
                 );
 
-
         if (optionalUser.isEmpty()) {
+
+            System.out.println(
+                    "USER NOT FOUND"
+            );
 
             return ResponseEntity
                     .status(401)
                     .body("Invalid email or password");
-
         }
-
 
         User user =
                 optionalUser.get();
 
+        String dbPassword =
+                user.getPassword();
 
-        if (
-                !user.getPassword()
-                        .equals(
-                                loginUser.getPassword()
-                        )
-        ) {
+        String enteredPassword =
+                loginUser.getPassword();
+
+        System.out.println(
+                "USER FOUND: [" +
+                user.getEmail() +
+                "]"
+        );
+
+        System.out.println(
+                "DB PASSWORD LENGTH: " +
+                (dbPassword == null
+                        ? "NULL"
+                        : dbPassword.length())
+        );
+
+        System.out.println(
+                "ENTERED PASSWORD LENGTH: " +
+                (enteredPassword == null
+                        ? "NULL"
+                        : enteredPassword.length())
+        );
+
+        boolean passwordMatches =
+                dbPassword != null &&
+                enteredPassword != null &&
+                dbPassword.equals(enteredPassword);
+
+        System.out.println(
+                "PASSWORD MATCH: " +
+                passwordMatches
+        );
+
+        if (!passwordMatches) {
 
             return ResponseEntity
                     .status(401)
                     .body("Invalid email or password");
-
         }
-
-
-        // Don't send password to React
 
         user.setPassword(null);
 
-
         return ResponseEntity.ok(user);
-
     }
-
 }

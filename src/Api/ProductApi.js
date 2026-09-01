@@ -1,7 +1,9 @@
-const API_URL = "https://ecom-1-um8s.onrender.com/api/products";
+
+const API_URL =
+    "https://ecom-1-um8s.onrender.com/api/products";
 
 const IMAGE_API_URL =
-    "https://ecom-1-um8s.onrender.com/api/images/upload";
+    "https://ecom-1-um8s.onrender.com/api/images/products/upload";
 
 
 // =====================================================
@@ -13,7 +15,11 @@ export const getProducts = async () => {
     const response = await fetch(API_URL);
 
     if (!response.ok) {
-        throw new Error("Failed to fetch products");
+
+        throw new Error(
+            `Failed to fetch products: ${response.status}`
+        );
+
     }
 
     return response.json();
@@ -40,11 +46,13 @@ export const addProduct = async (product) => {
 
     if (!response.ok) {
 
-        const errorText = await response.text();
+        const errorText =
+            await response.text();
 
         throw new Error(
             `Failed to add product: ${response.status} ${errorText}`
         );
+
     }
 
     return response.json();
@@ -70,16 +78,19 @@ export const updateProduct = async (
             },
 
             body: JSON.stringify(product)
+
         }
     );
 
     if (!response.ok) {
 
-        const errorText = await response.text();
+        const errorText =
+            await response.text();
 
         throw new Error(
             `Failed to update product: ${response.status} ${errorText}`
         );
+
     }
 
     return response.json();
@@ -92,6 +103,11 @@ export const updateProduct = async (
 
 export const deleteProduct = async (id) => {
 
+    console.log(
+        "DELETE PRODUCT:",
+        id
+    );
+
     const response = await fetch(
         `${API_URL}/${id}`,
         {
@@ -101,19 +117,21 @@ export const deleteProduct = async (id) => {
 
     if (!response.ok) {
 
-        const errorText = await response.text();
+        const errorText =
+            await response.text();
 
         throw new Error(
             `Failed to delete product: ${response.status} ${errorText}`
         );
+
     }
 
-    return response.text();
+    return true;
 };
 
 
 // =====================================================
-// UPLOAD IMAGE
+// UPLOAD PRODUCT IMAGE
 // =====================================================
 
 export const uploadImage = async (imageFile) => {
@@ -123,7 +141,11 @@ export const uploadImage = async (imageFile) => {
     // =================================================
 
     if (!imageFile) {
-        throw new Error("Please select an image");
+
+        throw new Error(
+            "Please select an image"
+        );
+
     }
 
 
@@ -131,17 +153,20 @@ export const uploadImage = async (imageFile) => {
     // CHECK IMAGE TYPE
     // =================================================
 
-    if (!imageFile.type.startsWith("image/")) {
+    if (
+        !imageFile.type ||
+        !imageFile.type.startsWith("image/")
+    ) {
 
         throw new Error(
             `${imageFile.name} is not a valid image`
         );
+
     }
 
 
     // =================================================
     // MAX FILE SIZE
-    // 20 MB
     // =================================================
 
     const maxSize =
@@ -153,6 +178,7 @@ export const uploadImage = async (imageFile) => {
         throw new Error(
             `${imageFile.name} is larger than 20 MB`
         );
+
     }
 
 
@@ -160,7 +186,8 @@ export const uploadImage = async (imageFile) => {
     // FORM DATA
     // =================================================
 
-    const formData = new FormData();
+    const formData =
+        new FormData();
 
     formData.append(
         "image",
@@ -169,16 +196,22 @@ export const uploadImage = async (imageFile) => {
 
 
     // =================================================
-    // UPLOAD
+    // UPLOAD PRODUCT IMAGE
     // =================================================
 
-    const response = await fetch(
-        IMAGE_API_URL,
-        {
-            method: "POST",
-            body: formData
-        }
+    console.log(
+        "Uploading PRODUCT image:",
+        imageFile.name
     );
+
+    const response =
+        await fetch(
+            IMAGE_API_URL,
+            {
+                method: "POST",
+                body: formData
+            }
+        );
 
 
     // =================================================
@@ -196,16 +229,20 @@ export const uploadImage = async (imageFile) => {
                 await response.text();
 
             if (errorText) {
-                message = errorText;
+
+                message =
+                    errorText;
+
             }
 
         } catch {
-            // Ignore response parsing error
+            // Ignore parsing error
         }
 
         throw new Error(
-            `Image upload failed: ${response.status} ${message}`
+            `Product image upload failed: ${response.status} ${message}`
         );
+
     }
 
 

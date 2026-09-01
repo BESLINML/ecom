@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 
 import { getProducts } from "../Api/ProductApi";
@@ -5,6 +6,12 @@ import { getBanners } from "../Api/BannerApi";
 
 import CategoryProducts from "./CategoryProducts";
 
+// =====================================================
+// BACKEND URL
+// =====================================================
+
+const BACKEND_URL =
+    "https://ecom-1-um8s.onrender.com";
 
 // =====================================================
 // HOME
@@ -20,7 +27,6 @@ export default function Home() {
 
     const [loading, setLoading] = useState(true);
 
-
     // =====================================================
     // BANNERS
     // =====================================================
@@ -30,7 +36,6 @@ export default function Home() {
     const [loadingBanners, setLoadingBanners] =
         useState(true);
 
-
     // =====================================================
     // SLIDER
     // =====================================================
@@ -39,6 +44,96 @@ export default function Home() {
 
     const [isMoving, setIsMoving] = useState(true);
 
+    // =====================================================
+    // GET IMAGE URL
+    // =====================================================
+
+    const getImageUrl = (image) => {
+
+        if (!image) {
+            return "";
+        }
+
+        if (typeof image !== "string") {
+            return "";
+        }
+
+        const trimmedImage = image.trim();
+
+        if (!trimmedImage) {
+            return "";
+        }
+
+        // Already a complete URL
+        if (
+            trimmedImage.startsWith("http://") ||
+            trimmedImage.startsWith("https://") ||
+            trimmedImage.startsWith("blob:")
+        ) {
+            return trimmedImage;
+        }
+
+        // Backend relative path
+        if (trimmedImage.startsWith("/")) {
+            return BACKEND_URL + trimmedImage;
+        }
+
+        return trimmedImage;
+    };
+
+    // =====================================================
+    // GET BANNER IMAGE
+    // =====================================================
+
+    const getBannerImage = (banner) => {
+
+        if (!banner || !banner.image) {
+            return "";
+        }
+
+        let image = banner.image;
+
+        // ---------------------------------------------
+        // Image is a string
+        // ---------------------------------------------
+
+        if (typeof image === "string") {
+
+            image = image.trim();
+
+            if (!image) {
+                return "";
+            }
+
+            // -----------------------------------------
+            // Handle JSON array accidentally stored
+            // -----------------------------------------
+
+            try {
+
+                const parsed =
+                    JSON.parse(image);
+
+                if (Array.isArray(parsed)) {
+
+                    if (parsed.length === 0) {
+                        return "";
+                    }
+
+                    return getImageUrl(
+                        parsed[0]
+                    );
+                }
+
+            } catch {
+                // Normal string
+            }
+
+            return getImageUrl(image);
+        }
+
+        return "";
+    };
 
     // =====================================================
     // LOAD PRODUCTS
@@ -52,7 +147,8 @@ export default function Home() {
 
                 setLoading(true);
 
-                const data = await getProducts();
+                const data =
+                    await getProducts();
 
                 console.log(
                     "Products from Spring Boot:",
@@ -79,14 +175,11 @@ export default function Home() {
                 setLoading(false);
 
             }
-
         };
-
 
         loadProducts();
 
     }, []);
-
 
     // =====================================================
     // LOAD BANNERS
@@ -100,7 +193,8 @@ export default function Home() {
 
                 setLoadingBanners(true);
 
-                const data = await getBanners();
+                const data =
+                    await getBanners();
 
                 console.log(
                     "Banners from Spring Boot:",
@@ -131,102 +225,28 @@ export default function Home() {
                 setLoadingBanners(false);
 
             }
-
         };
-
 
         loadBanners();
 
     }, []);
 
-
-    // =====================================================
-    // GET BANNER IMAGE
-    // =====================================================
-
-    const getBannerImage = (banner) => {
-
-        if (!banner) {
-            return "";
-        }
-
-
-        let image = banner.image;
-
-
-        // ---------------------------------------------
-        // No image
-        // ---------------------------------------------
-
-        if (!image) {
-            return "";
-        }
-
-
-        // ---------------------------------------------
-        // String image
-        // ---------------------------------------------
-
-        if (typeof image === "string") {
-
-            image = image.trim();
-
-
-            if (!image) {
-                return "";
-            }
-
-
-            // -----------------------------------------
-            // JSON array accidentally stored as string
-            // -----------------------------------------
-
-            try {
-
-                const parsed =
-                    JSON.parse(image);
-
-
-                if (Array.isArray(parsed)) {
-
-                    return parsed.length > 0
-                        ? parsed[0]
-                        : "";
-
-                }
-
-            } catch (error) {
-
-                // Normal URL/string
-            }
-
-
-            return image;
-
-        }
-
-
-        return "";
-
-    };
-
-
     // =====================================================
     // VALID BANNERS
     // =====================================================
 
-    const validBanners = banners.filter(
-        banner =>
-            getBannerImage(banner) !== ""
-    );
-
+    const validBanners =
+        banners.filter(
+            banner =>
+                getBannerImage(banner) !== ""
+        );
 
     // =====================================================
-    // HERO SLIDES
+    // CREATE INFINITE SLIDES
     // =====================================================
 
     const slides =
-        validBanners.length > 0
+        validBanners.length > 1
             ? [
                 validBanners[
                     validBanners.length - 1
@@ -236,11 +256,10 @@ export default function Home() {
 
                 validBanners[0]
             ]
-            : [];
-
+            : validBanners;
 
     // =====================================================
-    // RESET SLIDER WHEN BANNERS LOAD
+    // RESET SLIDER
     // =====================================================
 
     useEffect(() => {
@@ -250,30 +269,31 @@ export default function Home() {
             setIndex(0);
 
             return;
-
         }
 
+        if (validBanners.length === 1) {
+
+            setIndex(0);
+
+            return;
+        }
 
         setIsMoving(false);
 
         setIndex(1);
 
+        const timer =
+            setTimeout(() => {
 
-        const timer = setTimeout(() => {
+                setIsMoving(true);
 
-            setIsMoving(true);
-
-        }, 50);
-
+            }, 50);
 
         return () => {
-
             clearTimeout(timer);
-
         };
 
     }, [validBanners.length]);
-
 
     // =====================================================
     // AUTO SLIDER
@@ -285,15 +305,17 @@ export default function Home() {
             return;
         }
 
+        const timer =
+            setInterval(() => {
 
-        const timer = setInterval(() => {
+                setIsMoving(true);
 
-            setIsMoving(true);
+                setIndex(
+                    previous =>
+                        previous + 1
+                );
 
-            setIndex(previous => previous + 1);
-
-        }, 5000);
-
+            }, 5000);
 
         return () => {
 
@@ -303,68 +325,68 @@ export default function Home() {
 
     }, [validBanners.length]);
 
-
     // =====================================================
-    // INFINITE SLIDER LOOP
+    // INFINITE LOOP
     // =====================================================
 
     useEffect(() => {
 
         if (
-            slides.length > 1 &&
-            index === slides.length - 1
+            validBanners.length <= 1
+        ) {
+            return;
+        }
+
+        if (
+            index ===
+            slides.length - 1
         ) {
 
-            const timer = setTimeout(() => {
+            const timer =
+                setTimeout(() => {
 
-                // Turn animation OFF
-                setIsMoving(false);
+                    setIsMoving(false);
 
-                // Jump to first real banner
-                setIndex(1);
+                    setIndex(1);
 
-            }, 2500);
-
+                }, 2500);
 
             return () => {
 
                 clearTimeout(timer);
 
             };
-
         }
 
     }, [
         index,
-        slides.length
+        slides.length,
+        validBanners.length
     ]);
 
-
     // =====================================================
-    // TURN ANIMATION ON AGAIN
+    // TURN ANIMATION BACK ON
     // =====================================================
 
     useEffect(() => {
 
         if (!isMoving) {
 
-            const timer = setTimeout(() => {
+            const timer =
+                setTimeout(() => {
 
-                setIsMoving(true);
+                    setIsMoving(true);
 
-            }, 50);
-
+                }, 50);
 
             return () => {
 
                 clearTimeout(timer);
 
             };
-
         }
 
     }, [isMoving]);
-
 
     // =====================================================
     // GROUP PRODUCTS BY SUBCATEGORY
@@ -375,10 +397,6 @@ export default function Home() {
 
             (groups, product) => {
 
-                // -----------------------------------------
-                // Ignore missing subcategory
-                // -----------------------------------------
-
                 if (
                     !product.subcategory ||
                     !product.subcategory.trim()
@@ -388,14 +406,8 @@ export default function Home() {
 
                 }
 
-
                 const subcategory =
                     product.subcategory.trim();
-
-
-                // -----------------------------------------
-                // Create subcategory
-                // -----------------------------------------
 
                 if (
                     !groups[subcategory]
@@ -405,13 +417,9 @@ export default function Home() {
 
                 }
 
-
-                // -----------------------------------------
-                // Add product
-                // -----------------------------------------
-
-                groups[subcategory].push(product);
-
+                groups[subcategory].push(
+                    product
+                );
 
                 return groups;
 
@@ -421,10 +429,8 @@ export default function Home() {
 
         );
 
-
     // =====================================================
     // GET RANDOM 4 PRODUCTS
-    // KEEP SAME PRODUCTS USING LOCAL STORAGE
     // =====================================================
 
     const getRandomProducts = (
@@ -435,28 +441,19 @@ export default function Home() {
         const storageKey =
             `home_random_products_${subcategory}`;
 
-
-        // =================================================
-        // READ SAVED PRODUCTS
-        // =================================================
-
         const savedIds =
             localStorage.getItem(
                 storageKey
             );
-
 
         if (savedIds) {
 
             try {
 
                 const ids =
-                    JSON.parse(savedIds);
-
-
-                // -----------------------------------------
-                // Find saved products that still exist
-                // -----------------------------------------
+                    JSON.parse(
+                        savedIds
+                    );
 
                 const savedProducts =
                     ids
@@ -464,28 +461,19 @@ export default function Home() {
                             id =>
                                 productList.find(
                                     product =>
-                                        String(product.id) ===
+                                        String(
+                                            product.id
+                                        ) ===
                                         String(id)
                                 )
                         )
                         .filter(Boolean);
-
-
-                // -----------------------------------------
-                // Required number of products
-                // -----------------------------------------
 
                 const requiredCount =
                     Math.min(
                         4,
                         productList.length
                     );
-
-
-                // -----------------------------------------
-                // If all saved products still exist,
-                // use them
-                // -----------------------------------------
 
                 if (
                     savedProducts.length ===
@@ -504,13 +492,7 @@ export default function Home() {
                 );
 
             }
-
         }
-
-
-        // =================================================
-        // CREATE NEW RANDOM PRODUCTS
-        // =================================================
 
         const shuffled =
             [...productList].sort(
@@ -518,14 +500,8 @@ export default function Home() {
                     Math.random() - 0.5
             );
 
-
         const selected =
             shuffled.slice(0, 4);
-
-
-        // =================================================
-        // SAVE PRODUCT IDS
-        // =================================================
 
         try {
 
@@ -548,11 +524,8 @@ export default function Home() {
 
         }
 
-
         return selected;
-
     };
-
 
     // =====================================================
     // RETURN
@@ -562,17 +535,15 @@ export default function Home() {
 
         <div className="home">
 
-
             {/* =================================================
                 HERO BANNER
             ================================================= */}
 
             <section className="hero-banner">
 
-
-                {/* -----------------------------------------
+                {/* ---------------------------------------------
                     LOADING
-                ----------------------------------------- */}
+                --------------------------------------------- */}
 
                 {loadingBanners && (
 
@@ -586,10 +557,9 @@ export default function Home() {
 
                 )}
 
-
-                {/* -----------------------------------------
+                {/* ---------------------------------------------
                     NO BANNERS
-                ----------------------------------------- */}
+                --------------------------------------------- */}
 
                 {!loadingBanners &&
                     validBanners.length === 0 && (
@@ -604,10 +574,9 @@ export default function Home() {
 
                     )}
 
-
-                {/* -----------------------------------------
-                    SLIDER
-                ----------------------------------------- */}
+                {/* ---------------------------------------------
+                    HERO SLIDER
+                --------------------------------------------- */}
 
                 {!loadingBanners &&
                     validBanners.length > 0 && (
@@ -621,7 +590,8 @@ export default function Home() {
                                     `translateX(-${index * 100}%)`,
 
                                 transition:
-                                    isMoving
+                                    isMoving &&
+                                    validBanners.length > 1
                                         ? "transform 2.5s ease-in-out"
                                         : "none"
 
@@ -636,15 +606,11 @@ export default function Home() {
                                             banner
                                         );
 
-
                                     return (
 
                                         <div
                                             className="hero-slide"
-
-                                            key={
-                                                `${banner.id}-${i}`
-                                            }
+                                            key={`${banner.id}-${i}`}
                                         >
 
                                             <img
@@ -652,13 +618,18 @@ export default function Home() {
 
                                                 alt={
                                                     banner.title ||
-                                                    `Banner ${i + 1}`
+                                                    "Hero Banner"
                                                 }
 
                                                 onError={(event) => {
 
-                                                    event.currentTarget.style.display =
-                                                        "none";
+                                                    console.error(
+                                                        "Banner image failed:",
+                                                        image
+                                                    );
+
+                                                    event.currentTarget.src =
+                                                        "/placeholder.png";
 
                                                 }}
 
@@ -677,13 +648,11 @@ export default function Home() {
 
             </section>
 
-
             {/* =================================================
                 SPECIAL CATEGORIES
             ================================================= */}
 
             <section className="home-specialcat">
-
 
                 <div>
 
@@ -698,7 +667,6 @@ export default function Home() {
 
                 </div>
 
-
                 <div>
 
                     <img
@@ -711,7 +679,6 @@ export default function Home() {
                     </h4>
 
                 </div>
-
 
                 <div>
 
@@ -726,7 +693,6 @@ export default function Home() {
 
                 </div>
 
-
                 <div>
 
                     <img
@@ -739,7 +705,6 @@ export default function Home() {
                     </h4>
 
                 </div>
-
 
                 <div>
 
@@ -754,7 +719,6 @@ export default function Home() {
 
                 </div>
 
-
                 <div>
 
                     <img
@@ -767,7 +731,6 @@ export default function Home() {
                     </h4>
 
                 </div>
-
 
                 <div>
 
@@ -782,9 +745,7 @@ export default function Home() {
 
                 </div>
 
-
             </section>
-
 
             {/* =================================================
                 PRODUCTS LOADING
@@ -802,7 +763,6 @@ export default function Home() {
 
             )}
 
-
             {/* =================================================
                 NO PRODUCTS
             ================================================= */}
@@ -819,7 +779,6 @@ export default function Home() {
                     </div>
 
                 )}
-
 
             {/* =================================================
                 PRODUCT SECTIONS
@@ -839,20 +798,11 @@ export default function Home() {
                                 productList
                             ]) => {
 
-                                // ---------------------------------
-                                // Get saved/random 4
-                                // ---------------------------------
-
                                 const randomProducts =
                                     getRandomProducts(
                                         subcategory,
                                         productList
                                     );
-
-
-                                // ---------------------------------
-                                // Ignore empty groups
-                                // ---------------------------------
 
                                 if (
                                     randomProducts.length === 0
@@ -861,7 +811,6 @@ export default function Home() {
                                     return null;
 
                                 }
-
 
                                 return (
 
@@ -894,6 +843,4 @@ export default function Home() {
         </div>
 
     );
-
 }
-

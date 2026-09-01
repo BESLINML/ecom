@@ -36,7 +36,9 @@ export const getBanners = async () => {
 export const getBanner = async (id) => {
 
     const response =
-        await fetch(`${API_URL}/${id}`);
+        await fetch(
+            `${API_URL}/${id}`
+        );
 
     if (!response.ok) {
 
@@ -59,17 +61,19 @@ export const getBanner = async (id) => {
 export const addBanner = async (banner) => {
 
     const response =
-        await fetch(API_URL, {
+        await fetch(
+            API_URL,
+            {
+                method: "POST",
 
-            method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
 
-            headers: {
-                "Content-Type": "application/json"
-            },
-
-            body: JSON.stringify(banner)
-        });
-
+                body:
+                    JSON.stringify(banner)
+            }
+        );
 
     if (!response.ok) {
 
@@ -89,185 +93,119 @@ export const addBanner = async (banner) => {
 // UPDATE BANNER
 // =====================================================
 
-export const updateBanner =
-    async (id, banner) => {
+export const updateBanner = async (
+    id,
+    banner
+) => {
 
-        const response =
-            await fetch(
-                `${API_URL}/${id}`,
-                {
-                    method: "PUT",
+    const response =
+        await fetch(
+            `${API_URL}/${id}`,
+            {
+                method: "PUT",
 
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
 
-                    body:
-                        JSON.stringify(banner)
-                }
-            );
+                body:
+                    JSON.stringify(banner)
+            }
+        );
 
+    if (!response.ok) {
 
-        if (!response.ok) {
+        const errorText =
+            await response.text();
 
-            const errorText =
-                await response.text();
+        throw new Error(
+            `Failed to update banner: ${response.status} ${errorText}`
+        );
+    }
 
-            throw new Error(
-                `Failed to update banner: ${response.status} ${errorText}`
-            );
-        }
-
-        return response.json();
-    };
+    return response.json();
+};
 
 
 // =====================================================
 // DELETE BANNER
 // =====================================================
 
-export const deleteBanner =
-    async (id) => {
+export const deleteBanner = async (id) => {
 
-        const response =
-            await fetch(
-                `${API_URL}/${id}`,
-                {
-                    method: "DELETE"
-                }
-            );
+    console.log(
+        "DELETE BANNER:",
+        id
+    );
 
+    const response =
+        await fetch(
+            `${API_URL}/${id}`,
+            {
+                method: "DELETE"
+            }
+        );
 
-        if (!response.ok) {
+    if (!response.ok) {
 
-            const errorText =
-                await response.text();
+        const errorText =
+            await response.text();
 
-            throw new Error(
-                `Failed to delete banner: ${response.status} ${errorText}`
-            );
-        }
+        throw new Error(
+            `Failed to delete banner: ${response.status} ${errorText}`
+        );
+    }
 
-        return true;
-    };
+    return true;
+};
 
 
 // =====================================================
 // UPLOAD BANNER IMAGE
 // =====================================================
 
-export const uploadBannerImage =
-    async (file) => {
+export const uploadBannerImage = async (file) => {
 
-        // =================================================
-        // CHECK FILE
-        // =================================================
+    if (!file) {
+        throw new Error("No banner image selected");
+    }
 
-        if (!file) {
+    if (!file.type.startsWith("image/")) {
+        throw new Error("Please select a valid image");
+    }
 
-            throw new Error(
-                "No banner image selected"
-            );
+    const formData = new FormData();
+
+    formData.append("image", file);
+
+    const response = await fetch(
+        IMAGE_API_URL,
+        {
+            method: "POST",
+            body: formData
         }
+    );
 
+    const responseText =
+        await response.text();
 
-        console.log(
-            "Banner file:",
-            file
+    console.log(
+        "Banner upload status:",
+        response.status
+    );
+
+    console.log(
+        "Banner upload response:",
+        responseText
+    );
+
+    if (!response.ok) {
+
+        throw new Error(
+            `Banner image upload failed: ${response.status} ${responseText}`
         );
+    }
 
-        console.log(
-            "Banner file name:",
-            file.name
-        );
-
-        console.log(
-            "Banner file type:",
-            file.type
-        );
-
-        console.log(
-            "Banner file size:",
-            file.size
-        );
-
-
-        // =================================================
-        // CREATE FORM DATA
-        // =================================================
-
-        const formData =
-            new FormData();
-
-
-        // IMPORTANT:
-        // Spring Boot expects:
-        //
-        // @RequestPart("image")
-        //
-
-        formData.append(
-            "image",
-            file
-        );
-
-
-        // =================================================
-        // UPLOAD
-        // =================================================
-
-        const response =
-            await fetch(
-                IMAGE_API_URL,
-                {
-                    method: "POST",
-
-                    // DO NOT set Content-Type here.
-                    // Browser automatically creates:
-                    //
-                    // multipart/form-data;
-                    // boundary=...
-                    //
-                    body: formData
-                }
-            );
-
-
-        // =================================================
-        // READ RESPONSE
-        // =================================================
-
-        const responseText =
-            await response.text();
-
-
-        console.log(
-            "Image upload status:",
-            response.status
-        );
-
-        console.log(
-            "Image upload response:",
-            responseText
-        );
-
-
-        // =================================================
-        // ERROR
-        // =================================================
-
-        if (!response.ok) {
-
-            throw new Error(
-                `Image upload failed: ${response.status} ${responseText}`
-            );
-        }
-
-
-        // =================================================
-        // SUCCESS
-        // =================================================
-
-        return responseText.trim();
-    };
+    return responseText.trim();
+};

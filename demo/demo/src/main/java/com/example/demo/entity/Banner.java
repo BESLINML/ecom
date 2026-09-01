@@ -11,7 +11,9 @@ public class Banner {
     private Long id;
 
     @Column(length = 500)
-    private String image;
+    @Lob
+@Column(name = "image", columnDefinition = "LONGBLOB")
+private byte[] image;
 
     private String title;
 

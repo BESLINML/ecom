@@ -1,15 +1,22 @@
 package com.example.demo.controller;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.UUID;
+import com.example.demo.entity.Product;
+import com.example.demo.entity.ProductImage;
+import com.example.demo.entity.Banner;
+import com.example.demo.entity.BannerImage;
 
+import com.example.demo.repository.ProductRepository;
+import com.example.demo.repository.ProductImageRepository;
+import com.example.demo.repository.BannerRepository;
+import com.example.demo.repository.BannerImageRepository;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/images")
@@ -22,64 +29,116 @@ import org.springframework.web.multipart.MultipartFile;
 )
 public class ImageController {
 
-    private final String uploadDir = "/var/data/uploads/";
+    private final ProductRepository productRepository;
+    private final ProductImageRepository productImageRepository;
 
-    @PostMapping("/upload")
-    public ResponseEntity<String> uploadImage(
-            @RequestParam("image") MultipartFile file) {
+    private final BannerRepository bannerRepository;
+    private final BannerImageRepository bannerImageRepository;
+
+
+    public ImageController(
+            ProductRepository productRepository,
+            ProductImageRepository productImageRepository,
+            BannerRepository bannerRepository,
+            BannerImageRepository bannerImageRepository) {
+
+        this.productRepository = productRepository;
+        this.productImageRepository = productImageRepository;
+
+        this.bannerRepository = bannerRepository;
+        this.bannerImageRepository = bannerImageRepository;
+    }
+
+
+    // =====================================================
+    // UPLOAD PRODUCT IMAGE
+    // =====================================================
+
+    @PostMapping("/products/upload")
+    public ResponseEntity<String> uploadProductImage(
+            @RequestParam("image") MultipartFile file,
+            @RequestParam("productId") Long productId) {
 
         try {
 
+            // -------------------------------------------------
+            // CHECK FILE
+            // -------------------------------------------------
+
             if (file == null || file.isEmpty()) {
+
                 return ResponseEntity
                         .badRequest()
                         .body("Please select an image");
             }
 
-            String contentType = file.getContentType();
 
-            if (contentType == null ||
-                    !contentType.startsWith("image/")) {
+            // -------------------------------------------------
+            // CHECK IMAGE TYPE
+            // -------------------------------------------------
+
+            if (file.getContentType() == null ||
+                    !file.getContentType().startsWith("image/")) {
 
                 return ResponseEntity
                         .badRequest()
                         .body("Only image files are allowed");
             }
 
-            Path uploadPath = Paths.get(uploadDir);
 
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
+            // -------------------------------------------------
+            // FIND PRODUCT
+            // -------------------------------------------------
+
+            Product product =
+                    productRepository.findById(productId)
+                            .orElse(null);
+
+            if (product == null) {
+
+                return ResponseEntity
+                        .notFound()
+                        .build();
             }
 
-            String originalName = file.getOriginalFilename();
 
-            String extension = "";
+            // -------------------------------------------------
+            // CREATE PRODUCT IMAGE
+            // -------------------------------------------------
 
-            if (originalName != null &&
-                    originalName.contains(".")) {
+            ProductImage productImage =
+                    new ProductImage();
 
-                extension = originalName.substring(
-                        originalName.lastIndexOf(".")
-                );
-            }
+            productImage.setProduct(product);
 
-            String fileName =
-                    UUID.randomUUID() + extension;
-
-            Path filePath =
-                    uploadPath.resolve(fileName);
-
-            Files.copy(
-                    file.getInputStream(),
-                    filePath,
-                    StandardCopyOption.REPLACE_EXISTING
+            productImage.setImageData(
+                    file.getBytes()
             );
 
-            String imageUrl =
-                    "/uploads/" + fileName;
+            productImage.setContentType(
+                    file.getContentType()
+            );
 
-            return ResponseEntity.ok(imageUrl);
+
+            // -------------------------------------------------
+            // SAVE IMAGE TO MYSQL
+            // -------------------------------------------------
+
+            ProductImage savedImage =
+                    productImageRepository.save(
+                            productImage
+                    );
+
+
+            // -------------------------------------------------
+            // RETURN IMAGE URL
+            // -------------------------------------------------
+
+            return ResponseEntity.ok(
+                    "/api/images/products/"
+                    + savedImage.getId()
+            );
+
 
         } catch (IOException e) {
 
@@ -87,7 +146,190 @@ public class ImageController {
 
             return ResponseEntity
                     .internalServerError()
-                    .body("Image upload failed: " + e.getMessage());
+                    .body(
+                        "Product image upload failed: "
+                        + e.getMessage()
+                    );
         }
+    }
+
+
+    // =====================================================
+    // GET PRODUCT IMAGE
+    // =====================================================
+
+    @GetMapping("/products/{id}")
+    public ResponseEntity<byte[]> getProductImage(
+            @PathVariable Long id) {
+
+        return productImageRepository
+                .findById(id)
+                .map(image -> {
+
+                    MediaType mediaType =
+                            MediaType.parseMediaType(
+                                    image.getContentType()
+                            );
+
+                    return ResponseEntity.ok()
+                            .contentType(mediaType)
+                            .header(
+                                HttpHeaders.CACHE_CONTROL,
+                                "max-age=31536000"
+                            )
+                            .body(
+                                image.getImageData()
+                            );
+
+                })
+                .orElseGet(
+                    () -> ResponseEntity
+                            .notFound()
+                            .build()
+                );
+    }
+
+
+    // =====================================================
+    // UPLOAD BANNER IMAGE
+    // =====================================================
+
+    @PostMapping("/banners/upload")
+    public ResponseEntity<String> uploadBannerImage(
+            @RequestParam("image") MultipartFile file,
+            @RequestParam("bannerId") Long bannerId) {
+
+        try {
+
+            // -------------------------------------------------
+            // CHECK FILE
+            // -------------------------------------------------
+
+            if (file == null || file.isEmpty()) {
+
+                return ResponseEntity
+                        .badRequest()
+                        .body("Please select a banner image");
+            }
+
+
+            // -------------------------------------------------
+            // CHECK IMAGE TYPE
+            // -------------------------------------------------
+
+            if (file.getContentType() == null ||
+                    !file.getContentType().startsWith("image/")) {
+
+                return ResponseEntity
+                        .badRequest()
+                        .body("Only image files are allowed");
+            }
+
+
+            // -------------------------------------------------
+            // FIND BANNER
+            // -------------------------------------------------
+
+            Banner banner =
+                    bannerRepository.findById(bannerId)
+                            .orElse(null);
+
+            if (banner == null) {
+
+                return ResponseEntity
+                        .notFound()
+                        .build();
+            }
+
+
+            // -------------------------------------------------
+            // CREATE BANNER IMAGE
+            // -------------------------------------------------
+
+            BannerImage bannerImage =
+                    bannerImageRepository
+                            .findByBannerId(bannerId)
+                            .orElse(
+                                new BannerImage()
+                            );
+
+            bannerImage.setBanner(banner);
+
+            bannerImage.setImageData(
+                    file.getBytes()
+            );
+
+            bannerImage.setContentType(
+                    file.getContentType()
+            );
+
+
+            // -------------------------------------------------
+            // SAVE IMAGE TO MYSQL
+            // -------------------------------------------------
+
+            BannerImage savedImage =
+                    bannerImageRepository.save(
+                            bannerImage
+                    );
+
+
+            // -------------------------------------------------
+            // RETURN IMAGE URL
+            // -------------------------------------------------
+
+            return ResponseEntity.ok(
+                    "/api/images/banners/"
+                    + savedImage.getId()
+            );
+
+
+        } catch (IOException e) {
+
+            e.printStackTrace();
+
+            return ResponseEntity
+                    .internalServerError()
+                    .body(
+                        "Banner image upload failed: "
+                        + e.getMessage()
+                    );
+        }
+    }
+
+
+    // =====================================================
+    // GET BANNER IMAGE
+    // =====================================================
+
+    @GetMapping("/banners/{id}")
+    public ResponseEntity<byte[]> getBannerImage(
+            @PathVariable Long id) {
+
+        return bannerImageRepository
+                .findById(id)
+                .map(image -> {
+
+                    MediaType mediaType =
+                            MediaType.parseMediaType(
+                                    image.getContentType()
+                            );
+
+                    return ResponseEntity.ok()
+                            .contentType(mediaType)
+                            .header(
+                                HttpHeaders.CACHE_CONTROL,
+                                "max-age=31536000"
+                            )
+                            .body(
+                                image.getImageData()
+                            );
+
+                })
+                .orElseGet(
+                    () -> ResponseEntity
+                            .notFound()
+                            .build()
+                );
     }
 }

@@ -33,7 +33,7 @@ public class ImageController {
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     public ResponseEntity<String> uploadImage(
-            @RequestPart("image") MultipartFile file) {
+            @RequestParam("image") MultipartFile file) {
 
         try {
 

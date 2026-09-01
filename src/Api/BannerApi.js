@@ -1,10 +1,8 @@
-
 const API_URL =
     "https://ecom-1-um8s.onrender.com/api/banners";
 
 const IMAGE_API_URL =
     "https://ecom-1-um8s.onrender.com/api/images/upload";
-
 
 // =====================================================
 // GET ALL BANNERS
@@ -180,28 +178,19 @@ export const uploadBannerImage = async (file) => {
     formData.append("image", file);
 
     const response = await fetch(
-        IMAGE_API_URL,
+        "https://ecom-1-um8s.onrender.com/api/images/upload",
         {
             method: "POST",
             body: formData
         }
     );
 
-    const responseText =
-        await response.text();
+    const responseText = await response.text();
 
-    console.log(
-        "Banner upload status:",
-        response.status
-    );
-
-    console.log(
-        "Banner upload response:",
-        responseText
-    );
+    console.log("Banner upload status:", response.status);
+    console.log("Banner upload response:", responseText);
 
     if (!response.ok) {
-
         throw new Error(
             `Banner image upload failed: ${response.status} ${responseText}`
         );

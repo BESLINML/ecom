@@ -22,7 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 )
 public class ImageController {
 
-    private final String uploadDir = "uploads/";
+    private final String uploadDir = "/var/data/uploads/";
 
     @PostMapping("/upload")
     public ResponseEntity<String> uploadImage(
@@ -30,20 +30,11 @@ public class ImageController {
 
         try {
 
-            // ================================
-            // CHECK FILE
-            // ================================
-
             if (file == null || file.isEmpty()) {
-
                 return ResponseEntity
                         .badRequest()
                         .body("Please select an image");
             }
-
-            // ================================
-            // CHECK IMAGE TYPE
-            // ================================
 
             String contentType = file.getContentType();
 
@@ -55,64 +46,35 @@ public class ImageController {
                         .body("Only image files are allowed");
             }
 
-            // ================================
-            // CREATE UPLOAD DIRECTORY
-            // ================================
-
-            Path uploadPath =
-                    Paths.get(uploadDir);
+            Path uploadPath = Paths.get(uploadDir);
 
             if (!Files.exists(uploadPath)) {
-
                 Files.createDirectories(uploadPath);
             }
 
-            // ================================
-            // GET EXTENSION
-            // ================================
-
-            String originalName =
-                    file.getOriginalFilename();
+            String originalName = file.getOriginalFilename();
 
             String extension = "";
 
             if (originalName != null &&
                     originalName.contains(".")) {
 
-                extension =
-                        originalName.substring(
-                                originalName.lastIndexOf(".")
-                        );
+                extension = originalName.substring(
+                        originalName.lastIndexOf(".")
+                );
             }
 
-            // ================================
-            // CREATE UNIQUE FILE NAME
-            // ================================
-
             String fileName =
-                    UUID.randomUUID()
-                    + extension;
-
-            // ================================
-            // FILE PATH
-            // ================================
+                    UUID.randomUUID() + extension;
 
             Path filePath =
                     uploadPath.resolve(fileName);
-
-            // ================================
-            // SAVE FILE
-            // ================================
 
             Files.copy(
                     file.getInputStream(),
                     filePath,
                     StandardCopyOption.REPLACE_EXISTING
             );
-
-            // ================================
-            // RETURN URL
-            // ================================
 
             String imageUrl =
                     "/uploads/" + fileName;

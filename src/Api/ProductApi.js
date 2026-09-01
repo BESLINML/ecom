@@ -163,7 +163,7 @@ export const uploadImage = async (imageFile) => {
     const formData = new FormData();
 
     formData.append(
-        "file",
+        "image",
         imageFile
     );
 

@@ -16,8 +16,17 @@ import {
     getBanners,
     addBanner,
     updateBanner,
-    deleteBanner
+    deleteBanner,
+    uploadBannerImage
 } from "../Api/BannerApi";
+
+
+// =====================================================
+// BACKEND URL
+// =====================================================
+
+const BACKEND_URL =
+    "https://ecom-1-um8s.onrender.com";
 
 
 // =====================================================
@@ -30,16 +39,19 @@ export default function Admin() {
     // SECTION REFS
     // =====================================================
 
-    const bannerManagementRef = useRef(null);
+    const bannerManagementRef =
+        useRef(null);
 
-    const productManagementRef = useRef(null);
+    const productManagementRef =
+        useRef(null);
 
 
     // =====================================================
     // PRODUCTS
     // =====================================================
 
-    const [products, setProducts] = useState([]);
+    const [products, setProducts] =
+        useState([]);
 
     const [loadingProducts, setLoadingProducts] =
         useState(true);
@@ -160,6 +172,39 @@ export default function Admin() {
 
 
     // =====================================================
+    // CONVERT IMAGE URL
+    // =====================================================
+
+    const getImageUrl = (image) => {
+
+        if (!image) {
+
+            return "/placeholder.png";
+
+        }
+
+        if (
+            image.startsWith("http://") ||
+            image.startsWith("https://") ||
+            image.startsWith("blob:")
+        ) {
+
+            return image;
+
+        }
+
+        if (image.startsWith("/")) {
+
+            return BACKEND_URL + image;
+
+        }
+
+        return image;
+
+    };
+
+
+    // =====================================================
     // LOAD PRODUCTS
     // =====================================================
 
@@ -169,9 +214,13 @@ export default function Admin() {
 
             setLoadingProducts(true);
 
-            const data = await getProducts();
+            const data =
+                await getProducts();
 
-            console.log("Products:", data);
+            console.log(
+                "Products:",
+                data
+            );
 
             setProducts(
                 Array.isArray(data)
@@ -209,9 +258,13 @@ export default function Admin() {
 
             setLoadingBanners(true);
 
-            const data = await getBanners();
+            const data =
+                await getBanners();
 
-            console.log("Banners:", data);
+            console.log(
+                "Banners:",
+                data
+            );
 
             setBanners(
                 Array.isArray(data)
@@ -264,7 +317,9 @@ export default function Admin() {
             );
 
         if (!editingProduct) {
+
             return;
+
         }
 
         try {
@@ -332,7 +387,7 @@ export default function Admin() {
 
 
         // =================================================
-        // ALREADY ARRAY
+        // ARRAY
         // =================================================
 
         if (Array.isArray(image)) {
@@ -490,7 +545,7 @@ export default function Admin() {
 
 
             // =================================================
-            // UPLOAD NEW PRODUCT IMAGES
+            // UPLOAD PRODUCT IMAGES
             // =================================================
 
             if (imageFiles.length > 0) {
@@ -500,6 +555,11 @@ export default function Admin() {
                 for (
                     const file of imageFiles
                 ) {
+
+                    console.log(
+                        "Uploading product image:",
+                        file.name
+                    );
 
                     const url =
                         await uploadImage(
@@ -539,9 +599,7 @@ export default function Admin() {
                     Number(form.price),
 
                 offerprice:
-                    Number(
-                        form.offerprice
-                    ),
+                    Number(form.offerprice),
 
                 description:
                     form.description.trim(),
@@ -552,8 +610,14 @@ export default function Admin() {
             };
 
 
+            console.log(
+                "Saving product:",
+                product
+            );
+
+
             // =================================================
-            // UPDATE
+            // UPDATE PRODUCT
             // =================================================
 
             if (editingId) {
@@ -571,7 +635,7 @@ export default function Admin() {
 
 
             // =================================================
-            // ADD
+            // ADD PRODUCT
             // =================================================
 
             else {
@@ -598,14 +662,9 @@ export default function Admin() {
                 error
             );
 
-            console.error(
-                "Response:",
-                error?.response?.data
-            );
-
             alert(
-                error?.response?.data?.message ||
-                "Something went wrong"
+                error?.message ||
+                "Something went wrong while saving product"
             );
 
         } finally {
@@ -623,18 +682,10 @@ export default function Admin() {
 
     const handleEdit = (product) => {
 
-        // =================================================
-        // SET EDITING PRODUCT
-        // =================================================
-
         setEditingId(
             product.id
         );
 
-
-        // =================================================
-        // SET FORM
-        // =================================================
 
         setForm({
 
@@ -662,25 +713,20 @@ export default function Admin() {
         });
 
 
-        // =================================================
-        // EXISTING IMAGES
-        // =================================================
-
         const existingImages =
             getProductImages(
                 product.image
             );
 
         setImagePreview(
-            existingImages
+            existingImages.map(
+                image =>
+                    getImageUrl(image)
+            )
         );
 
         setImageFiles([]);
 
-
-        // =================================================
-        // SCROLL TO PRODUCT MANAGEMENT
-        // =================================================
 
         setTimeout(() => {
 
@@ -812,7 +858,7 @@ export default function Admin() {
             );
 
         return images.length > 0
-            ? images[0]
+            ? getImageUrl(images[0])
             : "/placeholder.png";
 
     };
@@ -891,15 +937,27 @@ export default function Admin() {
 
 
                 // =================================================
-                // UPLOAD BANNER IMAGE
+                // IMPORTANT:
+                // BANNER USES uploadBannerImage()
+                // NOT uploadImage()
                 // =================================================
 
                 if (bannerFile) {
 
+                    console.log(
+                        "Uploading banner image:",
+                        bannerFile.name
+                    );
+
                     imageUrl =
-                        await uploadImage(
+                        await uploadBannerImage(
                             bannerFile
                         );
+
+                    console.log(
+                        "Banner uploaded:",
+                        imageUrl
+                    );
 
                 }
 
@@ -922,8 +980,14 @@ export default function Admin() {
                 };
 
 
+                console.log(
+                    "Saving banner:",
+                    banner
+                );
+
+
                 // =================================================
-                // UPDATE
+                // UPDATE BANNER
                 // =================================================
 
                 if (editingBannerId) {
@@ -941,7 +1005,7 @@ export default function Admin() {
 
 
                 // =================================================
-                // ADD
+                // ADD BANNER
                 // =================================================
 
                 else {
@@ -968,12 +1032,8 @@ export default function Admin() {
                     error
                 );
 
-                console.error(
-                    "Banner response:",
-                    error?.response?.data
-                );
-
                 alert(
+                    error?.message ||
                     "Failed to save banner"
                 );
 
@@ -997,6 +1057,7 @@ export default function Admin() {
                 banner.id
             );
 
+
             setBannerForm({
 
                 image:
@@ -1010,16 +1071,16 @@ export default function Admin() {
 
             });
 
+
             setBannerFile(null);
 
+
             setBannerPreview(
-                banner.image || ""
+                getImageUrl(
+                    banner.image
+                )
             );
 
-
-            // =================================================
-            // SCROLL TO BANNER MANAGEMENT
-            // =================================================
 
             setTimeout(() => {
 
@@ -1140,7 +1201,6 @@ export default function Admin() {
 
         <div className="admin-page">
 
-
             {/* =================================================
                 PAGE TITLE
             ================================================= */}
@@ -1184,8 +1244,6 @@ export default function Admin() {
                     </h3>
 
 
-                    {/* IMAGE */}
-
                     <label htmlFor="banner-image">
 
                         Banner Image
@@ -1203,8 +1261,6 @@ export default function Admin() {
                     />
 
 
-                    {/* PREVIEW */}
-
                     {bannerPreview && (
 
                         <div className="admin-banner-preview">
@@ -1219,13 +1275,12 @@ export default function Admin() {
                     )}
 
 
-                    {/* TITLE */}
-
                     <label>
 
                         Banner Title
 
                     </label>
+
 
                     <input
                         type="text"
@@ -1240,13 +1295,12 @@ export default function Admin() {
                     />
 
 
-                    {/* DESCRIPTION */}
-
                     <label>
 
                         Banner Description
 
                     </label>
+
 
                     <textarea
                         name="description"
@@ -1260,8 +1314,6 @@ export default function Admin() {
                     />
 
 
-                    {/* SAVE */}
-
                     <button
                         type="submit"
                         disabled={
@@ -1271,7 +1323,7 @@ export default function Admin() {
 
                         {bannerLoading
 
-                            ? "Saving..."
+                            ? "Uploading..."
 
                             : editingBannerId
 
@@ -1281,8 +1333,6 @@ export default function Admin() {
 
                     </button>
 
-
-                    {/* CANCEL */}
 
                     {editingBannerId && (
 
@@ -1320,9 +1370,7 @@ export default function Admin() {
                     {loadingBanners && (
 
                         <p>
-
                             Loading banners...
-
                         </p>
 
                     )}
@@ -1332,9 +1380,7 @@ export default function Admin() {
                         banners.length === 0 && (
 
                             <p>
-
                                 No banners found.
-
                             </p>
 
                         )}
@@ -1357,8 +1403,9 @@ export default function Admin() {
 
                                             <img
                                                 src={
-                                                    banner.image ||
-                                                    "/placeholder.png"
+                                                    getImageUrl(
+                                                        banner.image
+                                                    )
                                                 }
                                                 alt={
                                                     banner.title ||
@@ -1442,15 +1489,11 @@ export default function Admin() {
 
             <section
                 className="admin-product-section"
-                ref={
-                    productManagementRef
-                }
+                ref={productManagementRef}
             >
 
                 <h2>
-
                     Product Management
-
                 </h2>
 
 
@@ -1474,13 +1517,10 @@ export default function Admin() {
                     </h2>
 
 
-                    {/* NAME */}
-
                     <label>
-
                         Product Name
-
                     </label>
+
 
                     <input
                         type="text"
@@ -1496,13 +1536,10 @@ export default function Admin() {
                     />
 
 
-                    {/* CATEGORY */}
-
                     <label>
-
                         Category
-
                     </label>
+
 
                     <input
                         type="text"
@@ -1518,13 +1555,10 @@ export default function Admin() {
                     />
 
 
-                    {/* SUBCATEGORY */}
-
                     <label>
-
                         Subcategory
-
                     </label>
+
 
                     <input
                         type="text"
@@ -1540,13 +1574,10 @@ export default function Admin() {
                     />
 
 
-                    {/* ORIGINAL PRICE */}
-
                     <label>
-
                         Original Price
-
                     </label>
+
 
                     <input
                         type="number"
@@ -1563,13 +1594,10 @@ export default function Admin() {
                     />
 
 
-                    {/* OFFER PRICE */}
-
                     <label>
-
                         Offer Price
-
                     </label>
+
 
                     <input
                         type="number"
@@ -1585,8 +1613,6 @@ export default function Admin() {
                         required
                     />
 
-
-                    {/* PRODUCT IMAGES */}
 
                     <label htmlFor="product-images">
 
@@ -1607,49 +1633,52 @@ export default function Admin() {
 
 
                     {/* =================================================
-                        NEW IMAGE PREVIEWS
+                        PRODUCT IMAGE PREVIEWS
                     ================================================= */}
 
-                    {imageFiles.length > 0 && (
+                    {imagePreview.length > 0 && (
 
                         <div className="admin-image-preview-container">
 
-                            {imageFiles.map(
+                            {imagePreview.map(
                                 (
-                                    file,
+                                    image,
                                     index
                                 ) => (
 
                                     <div
                                         className="admin-image-preview"
                                         key={
-                                            `${file.name}-${index}`
+                                            `${image}-${index}`
                                         }
                                     >
 
                                         <img
                                             src={
-                                                imagePreview[
-                                                    index
-                                                ]
-                                            }
-                                            alt="Preview"
-                                        />
-
-
-                                        <button
-                                            type="button"
-                                            onClick={() =>
-                                                removeSelectedImage(
-                                                    index
+                                                getImageUrl(
+                                                    image
                                                 )
                                             }
-                                            title="Remove image"
-                                        >
+                                            alt={`Product ${index + 1}`}
+                                        />
 
-                                            ×
+                                        {imageFiles.length > 0 && (
 
-                                        </button>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    removeSelectedImage(
+                                                        index
+                                                    )
+                                                }
+                                                title="Remove image"
+                                            >
+
+                                                ×
+
+                                            </button>
+
+                                        )}
 
                                     </div>
 
@@ -1661,57 +1690,10 @@ export default function Admin() {
                     )}
 
 
-                    {/* =================================================
-                        EXISTING IMAGE PREVIEWS
-                    ================================================= */}
-
-                    {editingId &&
-                        imageFiles.length === 0 &&
-                        imagePreview.length > 0 && (
-
-                            <div className="admin-image-preview-container">
-
-                                {imagePreview.map(
-                                    (
-                                        image,
-                                        index
-                                    ) => (
-
-                                        <div
-                                            className="admin-image-preview"
-                                            key={
-                                                index
-                                            }
-                                        >
-
-                                            <img
-                                                src={
-                                                    image
-                                                }
-                                                alt={
-                                                    `Existing ${
-                                                        index + 1
-                                                    }`
-                                                }
-                                            />
-
-                                        </div>
-
-                                    )
-                                )}
-
-                            </div>
-
-                        )}
-
-
-                    {/* DESCRIPTION */}
-
                     <label>
-
                         Product Description
-
                     </label>
+
 
                     <textarea
                         name="description"
@@ -1724,8 +1706,6 @@ export default function Admin() {
                         }
                     />
 
-
-                    {/* SAVE */}
 
                     <button
                         type="submit"
@@ -1746,8 +1726,6 @@ export default function Admin() {
 
                     </button>
 
-
-                    {/* CANCEL */}
 
                     {editingId && (
 
@@ -1782,8 +1760,6 @@ export default function Admin() {
                     </h2>
 
 
-                    {/* LOADING */}
-
                     {loadingProducts && (
 
                         <p className="products-loading">
@@ -1794,8 +1770,6 @@ export default function Admin() {
 
                     )}
 
-
-                    {/* EMPTY */}
 
                     {!loadingProducts &&
                         products.length === 0 && (
@@ -1808,8 +1782,6 @@ export default function Admin() {
 
                         )}
 
-
-                    {/* PRODUCTS */}
 
                     {!loadingProducts &&
                         products.length > 0 && (
@@ -1826,8 +1798,6 @@ export default function Admin() {
                                             }
                                         >
 
-                                            {/* PRODUCT IMAGE */}
-
                                             <img
                                                 src={
                                                     getFirstImage(
@@ -1841,11 +1811,7 @@ export default function Admin() {
                                             />
 
 
-                                            {/* TOP ACTIONS */}
-
                                             <div className="admin-actions">
-
-                                                {/* EDIT */}
 
                                                 <button
                                                     type="button"
@@ -1862,8 +1828,6 @@ export default function Admin() {
 
                                                 </button>
 
-
-                                                {/* DELETE */}
 
                                                 <button
                                                     type="button"
@@ -1883,8 +1847,6 @@ export default function Admin() {
                                             </div>
 
 
-                                            {/* PRODUCT NAME */}
-
                                             <h3>
 
                                                 {
@@ -1893,8 +1855,6 @@ export default function Admin() {
 
                                             </h3>
 
-
-                                            {/* CATEGORY */}
 
                                             <p>
 
@@ -1909,8 +1869,6 @@ export default function Admin() {
                                             </p>
 
 
-                                            {/* SUBCATEGORY */}
-
                                             <p>
 
                                                 <strong>
@@ -1923,8 +1881,6 @@ export default function Admin() {
 
                                             </p>
 
-
-                                            {/* PRICE */}
 
                                             <div className="admin-product-price">
 
@@ -1964,4 +1920,3 @@ export default function Admin() {
     );
 
 }
-

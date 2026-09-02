@@ -1,6 +1,6 @@
-
 package com.example.demo.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.*;
@@ -13,54 +13,20 @@ public class ProductImage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // =====================================================
-    // PRODUCT
-    // =====================================================
-
-    @ManyToOne(
-        fetch = FetchType.LAZY,
-        optional = false
-    )
-    @JoinColumn(
-        name = "product_id",
-        nullable = false
-    )
-    @JsonIgnore
-    private Product product;
-
-    // =====================================================
-    // IMAGE DATA
-    // =====================================================
-
     @Lob
-    @Column(
-        name = "image_data",
-        columnDefinition = "LONGBLOB",
-        nullable = false
-    )
+    @Column(name = "image_data", columnDefinition = "LONGBLOB")
+    @JsonIgnore
     private byte[] imageData;
 
-    // =====================================================
-    // CONTENT TYPE
-    // =====================================================
-
-    @Column(
-        name = "content_type",
-        length = 100,
-        nullable = false
-    )
     private String contentType;
 
-    // =====================================================
-    // CONSTRUCTOR
-    // =====================================================
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
+    @JsonBackReference
+    private Product product;
 
     public ProductImage() {
     }
-
-    // =====================================================
-    // ID
-    // =====================================================
 
     public Long getId() {
         return id;
@@ -70,22 +36,6 @@ public class ProductImage {
         this.id = id;
     }
 
-    // =====================================================
-    // PRODUCT
-    // =====================================================
-
-    public Product getProduct() {
-        return product;
-    }
-
-    public void setProduct(Product product) {
-        this.product = product;
-    }
-
-    // =====================================================
-    // IMAGE DATA
-    // =====================================================
-
     public byte[] getImageData() {
         return imageData;
     }
@@ -94,15 +44,19 @@ public class ProductImage {
         this.imageData = imageData;
     }
 
-    // =====================================================
-    // CONTENT TYPE
-    // =====================================================
-
     public String getContentType() {
         return contentType;
     }
 
     public void setContentType(String contentType) {
         this.contentType = contentType;
+    }
+
+    public Product getProduct() {
+        return product;
+    }
+
+    public void setProduct(Product product) {
+        this.product = product;
     }
 }

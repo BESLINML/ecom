@@ -1,6 +1,7 @@
-
 package com.example.demo.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -11,11 +12,10 @@ public class BannerImage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "banner_id", nullable = false)
+    @JsonBackReference
     private Banner banner;
-
 
     @Lob
     @Column(
@@ -23,28 +23,14 @@ public class BannerImage {
         columnDefinition = "LONGBLOB",
         nullable = false
     )
+    @JsonIgnore
     private byte[] imageData;
 
-
-    @Column(
-        name = "content_type",
-        length = 100,
-        nullable = false
-    )
+    @Column(name = "content_type", length = 100, nullable = false)
     private String contentType;
-
-
-    // =====================================================
-    // CONSTRUCTOR
-    // =====================================================
 
     public BannerImage() {
     }
-
-
-    // =====================================================
-    // ID
-    // =====================================================
 
     public Long getId() {
         return id;
@@ -54,11 +40,6 @@ public class BannerImage {
         this.id = id;
     }
 
-
-    // =====================================================
-    // BANNER
-    // =====================================================
-
     public Banner getBanner() {
         return banner;
     }
@@ -67,11 +48,6 @@ public class BannerImage {
         this.banner = banner;
     }
 
-
-    // =====================================================
-    // IMAGE DATA
-    // =====================================================
-
     public byte[] getImageData() {
         return imageData;
     }
@@ -79,11 +55,6 @@ public class BannerImage {
     public void setImageData(byte[] imageData) {
         this.imageData = imageData;
     }
-
-
-    // =====================================================
-    // CONTENT TYPE
-    // =====================================================
 
     public String getContentType() {
         return contentType;

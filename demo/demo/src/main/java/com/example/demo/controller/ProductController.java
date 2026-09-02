@@ -1,4 +1,3 @@
-
 package com.example.demo.controller;
 
 import java.util.ArrayList;
@@ -17,7 +16,13 @@ import com.example.demo.repository.ProductImageRepository;
 
 @RestController
 @RequestMapping("/api/products")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(
+    origins = {
+        "http://localhost:5173",
+        "https://dynamic-jelly-ad6cf3.netlify.app",
+        "https://ecommerce-ebbc4.web.app"
+    }
+)
 public class ProductController {
 
     private final ProductRepository productRepository;
@@ -32,14 +37,16 @@ public class ProductController {
     }
 
     // =====================================================
-    // ADD SINGLE PRODUCT - JSON
+    // ADD SINGLE PRODUCT
+    // POST /api/products
     // =====================================================
 
     @PostMapping
     public ResponseEntity<Product> addProduct(
             @RequestBody Product product) {
 
-        Product savedProduct = productRepository.save(product);
+        Product savedProduct =
+                productRepository.save(product);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -48,6 +55,7 @@ public class ProductController {
 
     // =====================================================
     // ADD MULTIPLE PRODUCTS
+    // POST /api/products/bulk
     // =====================================================
 
     @PostMapping("/bulk")
@@ -64,6 +72,7 @@ public class ProductController {
 
     // =====================================================
     // GET ALL PRODUCTS
+    // GET /api/products
     // =====================================================
 
     @GetMapping
@@ -77,6 +86,7 @@ public class ProductController {
 
     // =====================================================
     // GET SINGLE PRODUCT
+    // GET /api/products/{id}
     // =====================================================
 
     @GetMapping("/{id}")
@@ -87,7 +97,7 @@ public class ProductController {
                 productRepository.findById(id)
                         .orElseThrow(() ->
                                 new RuntimeException(
-                                        "Product not found with id: " + id
+                                    "Product not found with id: " + id
                                 )
                         );
 
@@ -96,11 +106,13 @@ public class ProductController {
 
     // =====================================================
     // ADD PRODUCT WITH MULTIPLE IMAGES
+    //
+    // POST /api/products/upload
     // =====================================================
 
     @PostMapping(
-            value = "/upload",
-            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+        value = "/upload",
+        consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     public ResponseEntity<Product> addProductWithImages(
 
@@ -110,7 +122,10 @@ public class ProductController {
             @RequestParam("category")
             String category,
 
-            @RequestParam(value = "subcategory", required = false)
+            @RequestParam(
+                value = "subcategory",
+                required = false
+            )
             String subcategory,
 
             @RequestParam("price")
@@ -119,15 +134,23 @@ public class ProductController {
             @RequestParam("offerprice")
             Double offerprice,
 
-            @RequestParam(value = "description", required = false)
+            @RequestParam(
+                value = "description",
+                required = false
+            )
             String description,
 
-            @RequestParam(value = "images", required = false)
-            MultipartFile[] images) throws Exception {
+            @RequestParam(
+                value = "images",
+                required = false
+            )
+            MultipartFile[] images)
 
-        // ================================================
+            throws Exception {
+
+        // =================================================
         // CREATE PRODUCT
-        // ================================================
+        // =================================================
 
         Product product = new Product();
 
@@ -138,16 +161,9 @@ public class ProductController {
         product.setOfferprice(offerprice);
         product.setDescription(description);
 
-        // ================================================
-        // SAVE PRODUCT FIRST
-        // ================================================
-
-        Product savedProduct =
-                productRepository.save(product);
-
-        // ================================================
-        // SAVE IMAGES
-        // ================================================
+        // =================================================
+        // ADD IMAGES TO PRODUCT
+        // =================================================
 
         if (images != null) {
 
@@ -157,10 +173,16 @@ public class ProductController {
                     continue;
                 }
 
+                if (
+                    file.getContentType() == null ||
+                    !file.getContentType()
+                            .startsWith("image/")
+                ) {
+                    continue;
+                }
+
                 ProductImage productImage =
                         new ProductImage();
-
-                productImage.setProduct(savedProduct);
 
                 productImage.setImageData(
                         file.getBytes()
@@ -170,47 +192,59 @@ public class ProductController {
                         file.getContentType()
                 );
 
-                productImageRepository.save(
-                        productImage
-                );
+                // IMPORTANT
+                product.addImage(productImage);
             }
         }
 
-        // ================================================
-        // RETURN UPDATED PRODUCT
-        // ================================================
+        // =================================================
+        // SAVE PRODUCT + IMAGES
+        // =================================================
 
-        Product finalProduct =
-                productRepository.findById(savedProduct.getId())
-                        .orElse(savedProduct);
+        Product savedProduct =
+                productRepository.save(product);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(finalProduct);
+                .body(savedProduct);
     }
 
     // =====================================================
     // UPLOAD IMAGES TO EXISTING PRODUCT
+    //
+    // POST /api/products/{id}/images
     // =====================================================
 
     @PostMapping(
-            value = "/{id}/images",
-            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+        value = "/{id}/images",
+        consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     public ResponseEntity<String> uploadImages(
             @PathVariable Long id,
-            @RequestParam("images") MultipartFile[] images)
+            @RequestParam("images")
+            MultipartFile[] images)
             throws Exception {
+
+        // =================================================
+        // FIND PRODUCT
+        // =================================================
 
         Product product =
                 productRepository.findById(id)
                         .orElseThrow(() ->
                                 new RuntimeException(
-                                        "Product not found with id: " + id
+                                    "Product not found with id: " + id
                                 )
                         );
 
-        if (images == null || images.length == 0) {
+        // =================================================
+        // VALIDATE IMAGES
+        // =================================================
+
+        if (
+            images == null ||
+            images.length == 0
+        ) {
 
             return ResponseEntity
                     .badRequest()
@@ -219,16 +253,27 @@ public class ProductController {
 
         int uploadedCount = 0;
 
+        // =================================================
+        // SAVE IMAGES
+        // =================================================
+
         for (MultipartFile file : images) {
 
             if (file == null || file.isEmpty()) {
                 continue;
             }
 
+            if (
+                file.getContentType() == null ||
+                !file.getContentType()
+                        .startsWith("image/")
+            ) {
+
+                continue;
+            }
+
             ProductImage productImage =
                     new ProductImage();
-
-            productImage.setProduct(product);
 
             productImage.setImageData(
                     file.getBytes()
@@ -238,12 +283,17 @@ public class ProductController {
                     file.getContentType()
             );
 
-            productImageRepository.save(
-                    productImage
-            );
+            // IMPORTANT
+            product.addImage(productImage);
 
             uploadedCount++;
         }
+
+        // =================================================
+        // SAVE PRODUCT + NEW IMAGES
+        // =================================================
+
+        productRepository.save(product);
 
         return ResponseEntity.ok(
                 uploadedCount +
@@ -253,6 +303,8 @@ public class ProductController {
 
     // =====================================================
     // GET PRODUCT IMAGE
+    //
+    // GET /api/products/images/{imageId}
     // =====================================================
 
     @GetMapping("/images/{imageId}")
@@ -263,21 +315,35 @@ public class ProductController {
                 productImageRepository.findById(imageId)
                         .orElseThrow(() ->
                                 new RuntimeException(
-                                        "Image not found with id: " + imageId
+                                    "Image not found with id: " +
+                                    imageId
                                 )
                         );
 
+        MediaType mediaType;
+
+        try {
+
+            mediaType =
+                    MediaType.parseMediaType(
+                            image.getContentType()
+                    );
+
+        } catch (Exception e) {
+
+            mediaType =
+                    MediaType.APPLICATION_OCTET_STREAM;
+        }
+
         return ResponseEntity.ok()
-                .contentType(
-                        MediaType.parseMediaType(
-                                image.getContentType()
-                        )
-                )
+                .contentType(mediaType)
                 .body(image.getImageData());
     }
 
     // =====================================================
     // GET ALL IMAGES FOR PRODUCT
+    //
+    // GET /api/products/{id}/images
     // =====================================================
 
     @GetMapping("/{id}/images")
@@ -288,14 +354,18 @@ public class ProductController {
                 productRepository.findById(id)
                         .orElseThrow(() ->
                                 new RuntimeException(
-                                        "Product not found with id: " + id
+                                    "Product not found with id: " +
+                                    id
                                 )
                         );
 
         List<String> imageUrls =
                 new ArrayList<>();
 
-        for (ProductImage image : product.getImages()) {
+        for (
+            ProductImage image :
+            product.getImages()
+        ) {
 
             imageUrls.add(
                     "/api/products/images/" +
@@ -308,6 +378,8 @@ public class ProductController {
 
     // =====================================================
     // UPDATE PRODUCT
+    //
+    // PUT /api/products/{id}
     // =====================================================
 
     @PutMapping("/{id}")
@@ -319,7 +391,8 @@ public class ProductController {
                 productRepository.findById(id)
                         .orElseThrow(() ->
                                 new RuntimeException(
-                                        "Product not found with id: " + id
+                                    "Product not found with id: " +
+                                    id
                                 )
                         );
 
@@ -359,6 +432,8 @@ public class ProductController {
 
     // =====================================================
     // DELETE PRODUCT
+    //
+    // DELETE /api/products/{id}
     // =====================================================
 
     @DeleteMapping("/{id}")
@@ -369,9 +444,13 @@ public class ProductController {
                 productRepository.findById(id)
                         .orElseThrow(() ->
                                 new RuntimeException(
-                                        "Product not found with id: " + id
+                                    "Product not found with id: " +
+                                    id
                                 )
                         );
+
+        // CascadeType.ALL + orphanRemoval
+        // will remove product images too.
 
         productRepository.delete(product);
 
@@ -382,6 +461,8 @@ public class ProductController {
 
     // =====================================================
     // DELETE PRODUCT IMAGE
+    //
+    // DELETE /api/products/images/{imageId}
     // =====================================================
 
     @DeleteMapping("/images/{imageId}")
@@ -392,7 +473,8 @@ public class ProductController {
                 productImageRepository.findById(imageId)
                         .orElseThrow(() ->
                                 new RuntimeException(
-                                        "Image not found with id: " + imageId
+                                    "Image not found with id: " +
+                                    imageId
                                 )
                         );
 

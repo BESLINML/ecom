@@ -1,6 +1,6 @@
-
 package com.example.demo.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
@@ -10,70 +10,30 @@ import java.util.List;
 @Table(name = "banners")
 public class Banner {
 
-    // =====================================================
-    // ID
-    // =====================================================
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-
-    // =====================================================
-    // BANNER IMAGE URL / OLD IMAGE FIELD
-    // =====================================================
-    //
-    // Keep this as String if your existing BannerController
-    // and frontend still use the "image" field.
-    //
-    // New uploaded images can be stored in BannerImage.
-    // =====================================================
-
     @Column(name = "image")
     private String image;
-
-
-    // =====================================================
-    // TITLE
-    // =====================================================
 
     @Column(name = "title")
     private String title;
 
-
-    // =====================================================
-    // DESCRIPTION
-    // =====================================================
-
     @Column(name = "description", length = 2000)
     private String description;
-
-
-    // =====================================================
-    // BANNER IMAGES
-    // =====================================================
 
     @OneToMany(
         mappedBy = "banner",
         cascade = CascadeType.ALL,
         orphanRemoval = true,
-        fetch = FetchType.LAZY
+        fetch = FetchType.EAGER
     )
-    private List<BannerImage> images =
-            new ArrayList<>();
-
-
-    // =====================================================
-    // CONSTRUCTOR
-    // =====================================================
+    @JsonManagedReference
+    private List<BannerImage> images = new ArrayList<>();
 
     public Banner() {
     }
-
-
-    // =====================================================
-    // ID
-    // =====================================================
 
     public Long getId() {
         return id;
@@ -83,11 +43,6 @@ public class Banner {
         this.id = id;
     }
 
-
-    // =====================================================
-    // IMAGE
-    // =====================================================
-
     public String getImage() {
         return image;
     }
@@ -95,11 +50,6 @@ public class Banner {
     public void setImage(String image) {
         this.image = image;
     }
-
-
-    // =====================================================
-    // TITLE
-    // =====================================================
 
     public String getTitle() {
         return title;
@@ -109,11 +59,6 @@ public class Banner {
         this.title = title;
     }
 
-
-    // =====================================================
-    // DESCRIPTION
-    // =====================================================
-
     public String getDescription() {
         return description;
     }
@@ -122,40 +67,43 @@ public class Banner {
         this.description = description;
     }
 
-
-    // =====================================================
-    // IMAGES
-    // =====================================================
-
     public List<BannerImage> getImages() {
         return images;
     }
 
     public void setImages(List<BannerImage> images) {
-        this.images = images;
+        this.images.clear();
+
+        if (images != null) {
+            for (BannerImage image : images) {
+                addImage(image);
+            }
+        }
     }
 
-
-    // =====================================================
-    // ADD IMAGE
-    // =====================================================
-
     public void addImage(BannerImage image) {
+        if (image == null) {
+            return;
+        }
 
         images.add(image);
-
         image.setBanner(this);
     }
 
-
-    // =====================================================
-    // REMOVE IMAGE
-    // =====================================================
-
     public void removeImage(BannerImage image) {
+        if (image == null) {
+            return;
+        }
 
         images.remove(image);
-
         image.setBanner(null);
+    }
+
+    public void clearImages() {
+        for (BannerImage image : images) {
+            image.setBanner(null);
+        }
+
+        images.clear();
     }
 }

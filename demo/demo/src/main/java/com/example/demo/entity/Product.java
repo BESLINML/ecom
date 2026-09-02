@@ -1,7 +1,9 @@
-
 package com.example.demo.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 import jakarta.persistence.*;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,10 +14,6 @@ public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    // =====================================================
-    // PRODUCT DETAILS
-    // =====================================================
 
     @Column(nullable = false)
     private String name;
@@ -34,28 +32,16 @@ public class Product {
     @Column(length = 1000)
     private String description;
 
-    // =====================================================
-    // PRODUCT IMAGES
-    // =====================================================
-
     @OneToMany(
         mappedBy = "product",
         cascade = CascadeType.ALL,
         orphanRemoval = true,
-        fetch = FetchType.LAZY
+        fetch = FetchType.EAGER
     )
+    @JsonManagedReference
     private List<ProductImage> images = new ArrayList<>();
 
-    // =====================================================
-    // CONSTRUCTOR
-    // =====================================================
-
-    public Product() {
-    }
-
-    // =====================================================
-    // ID
-    // =====================================================
+    public Product() {}
 
     public Long getId() {
         return id;
@@ -65,10 +51,6 @@ public class Product {
         this.id = id;
     }
 
-    // =====================================================
-    // NAME
-    // =====================================================
-
     public String getName() {
         return name;
     }
@@ -76,10 +58,6 @@ public class Product {
     public void setName(String name) {
         this.name = name;
     }
-
-    // =====================================================
-    // CATEGORY
-    // =====================================================
 
     public String getCategory() {
         return category;
@@ -89,10 +67,6 @@ public class Product {
         this.category = category;
     }
 
-    // =====================================================
-    // SUBCATEGORY
-    // =====================================================
-
     public String getSubcategory() {
         return subcategory;
     }
@@ -100,10 +74,6 @@ public class Product {
     public void setSubcategory(String subcategory) {
         this.subcategory = subcategory;
     }
-
-    // =====================================================
-    // PRICE
-    // =====================================================
 
     public Double getPrice() {
         return price;
@@ -113,10 +83,6 @@ public class Product {
         this.price = price;
     }
 
-    // =====================================================
-    // OFFER PRICE
-    // =====================================================
-
     public Double getOfferprice() {
         return offerprice;
     }
@@ -124,10 +90,6 @@ public class Product {
     public void setOfferprice(Double offerprice) {
         this.offerprice = offerprice;
     }
-
-    // =====================================================
-    // DESCRIPTION
-    // =====================================================
 
     public String getDescription() {
         return description;
@@ -137,32 +99,21 @@ public class Product {
         this.description = description;
     }
 
-    // =====================================================
-    // IMAGES
-    // =====================================================
-
     public List<ProductImage> getImages() {
         return images;
     }
 
     public void setImages(List<ProductImage> images) {
-
         this.images.clear();
 
         if (images != null) {
-
             for (ProductImage image : images) {
                 addImage(image);
             }
         }
     }
 
-    // =====================================================
-    // ADD IMAGE
-    // =====================================================
-
     public void addImage(ProductImage image) {
-
         if (image == null) {
             return;
         }
@@ -171,12 +122,7 @@ public class Product {
         image.setProduct(this);
     }
 
-    // =====================================================
-    // REMOVE IMAGE
-    // =====================================================
-
     public void removeImage(ProductImage image) {
-
         if (image == null) {
             return;
         }
@@ -185,12 +131,7 @@ public class Product {
         image.setProduct(null);
     }
 
-    // =====================================================
-    // CLEAR ALL IMAGES
-    // =====================================================
-
     public void clearImages() {
-
         for (ProductImage image : images) {
             image.setProduct(null);
         }

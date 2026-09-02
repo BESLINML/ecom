@@ -1,14 +1,14 @@
+
 package com.example.demo.controller;
 
-import com.example.demo.entity.Product;
-import com.example.demo.entity.ProductImage;
 import com.example.demo.entity.Banner;
 import com.example.demo.entity.BannerImage;
-
-import com.example.demo.repository.ProductRepository;
-import com.example.demo.repository.ProductImageRepository;
-import com.example.demo.repository.BannerRepository;
+import com.example.demo.entity.Product;
+import com.example.demo.entity.ProductImage;
 import com.example.demo.repository.BannerImageRepository;
+import com.example.demo.repository.BannerRepository;
+import com.example.demo.repository.ProductImageRepository;
+import com.example.demo.repository.ProductRepository;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -16,10 +16,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-
 @RestController
-@RequestMapping("/api/images")
+@RequestMapping("/api")
 @CrossOrigin(
     origins = {
         "http://localhost:5173",
@@ -35,7 +33,6 @@ public class ImageController {
     private final BannerRepository bannerRepository;
     private final BannerImageRepository bannerImageRepository;
 
-
     public ImageController(
             ProductRepository productRepository,
             ProductImageRepository productImageRepository,
@@ -44,178 +41,32 @@ public class ImageController {
 
         this.productRepository = productRepository;
         this.productImageRepository = productImageRepository;
-
         this.bannerRepository = bannerRepository;
         this.bannerImageRepository = bannerImageRepository;
     }
 
 
     // =====================================================
-    // UPLOAD PRODUCT IMAGE
+    // BANNER IMAGE UPLOAD
+    //
+    // POST /api/banners/upload
     // =====================================================
 
-    @PostMapping("/products/upload")
-    public ResponseEntity<String> uploadProductImage(
-            @RequestParam("image") MultipartFile file,
-            @RequestParam("productId") Long productId) {
-
-        try {
-
-            // -------------------------------------------------
-            // CHECK FILE
-            // -------------------------------------------------
-
-            if (file == null || file.isEmpty()) {
-
-                return ResponseEntity
-                        .badRequest()
-                        .body("Please select an image");
-            }
-
-
-            // -------------------------------------------------
-            // CHECK IMAGE TYPE
-            // -------------------------------------------------
-
-            if (file.getContentType() == null ||
-                    !file.getContentType().startsWith("image/")) {
-
-                return ResponseEntity
-                        .badRequest()
-                        .body("Only image files are allowed");
-            }
-
-
-            // -------------------------------------------------
-            // FIND PRODUCT
-            // -------------------------------------------------
-
-            Product product =
-                    productRepository.findById(productId)
-                            .orElse(null);
-
-            if (product == null) {
-
-                return ResponseEntity
-                        .notFound()
-                        .build();
-            }
-
-
-            // -------------------------------------------------
-            // CREATE PRODUCT IMAGE
-            // -------------------------------------------------
-
-            ProductImage productImage =
-                    new ProductImage();
-
-            productImage.setProduct(product);
-
-            productImage.setImageData(
-                    file.getBytes()
-            );
-
-            productImage.setContentType(
-                    file.getContentType()
-            );
-
-
-            // -------------------------------------------------
-            // SAVE IMAGE TO MYSQL
-            // -------------------------------------------------
-
-            ProductImage savedImage =
-                    productImageRepository.save(
-                            productImage
-                    );
-
-
-            // -------------------------------------------------
-            // RETURN IMAGE URL
-            // -------------------------------------------------
-
-            return ResponseEntity.ok(
-                    "/api/images/products/"
-                    + savedImage.getId()
-            );
-
-
-        } catch (IOException e) {
-
-            e.printStackTrace();
-
-            return ResponseEntity
-                    .internalServerError()
-                    .body(
-                        "Product image upload failed: "
-                        + e.getMessage()
-                    );
-        }
-    }
-
-
-    // =====================================================
-    // GET PRODUCT IMAGE
-    // =====================================================
-
-    @GetMapping("/products/{id}")
-    public ResponseEntity<byte[]> getProductImage(
-            @PathVariable Long id) {
-
-        return productImageRepository
-                .findById(id)
-                .map(image -> {
-
-                    MediaType mediaType =
-                            MediaType.parseMediaType(
-                                    image.getContentType()
-                            );
-
-                    return ResponseEntity.ok()
-                            .contentType(mediaType)
-                            .header(
-                                HttpHeaders.CACHE_CONTROL,
-                                "max-age=31536000"
-                            )
-                            .body(
-                                image.getImageData()
-                            );
-
-                })
-                .orElseGet(
-                    () -> ResponseEntity
-                            .notFound()
-                            .build()
-                );
-    }
-
-
-    // =====================================================
-    // UPLOAD BANNER IMAGE
-    // =====================================================
-
-    @PostMapping("/banners/upload")
+    @PostMapping(
+        value = "/banners/upload",
+        consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
     public ResponseEntity<String> uploadBannerImage(
             @RequestParam("image") MultipartFile file,
             @RequestParam("bannerId") Long bannerId) {
 
         try {
 
-            // -------------------------------------------------
-            // CHECK FILE
-            // -------------------------------------------------
-
             if (file == null || file.isEmpty()) {
-
                 return ResponseEntity
                         .badRequest()
                         .body("Please select a banner image");
             }
-
-
-            // -------------------------------------------------
-            // CHECK IMAGE TYPE
-            // -------------------------------------------------
 
             if (file.getContentType() == null ||
                     !file.getContentType().startsWith("image/")) {
@@ -225,66 +76,33 @@ public class ImageController {
                         .body("Only image files are allowed");
             }
 
-
-            // -------------------------------------------------
-            // FIND BANNER
-            // -------------------------------------------------
-
-            Banner banner =
-                    bannerRepository.findById(bannerId)
-                            .orElse(null);
+            Banner banner = bannerRepository
+                    .findById(bannerId)
+                    .orElse(null);
 
             if (banner == null) {
-
                 return ResponseEntity
                         .notFound()
                         .build();
             }
 
-
-            // -------------------------------------------------
-            // CREATE BANNER IMAGE
-            // -------------------------------------------------
-
             BannerImage bannerImage =
                     bannerImageRepository
                             .findByBannerId(bannerId)
-                            .orElse(
-                                new BannerImage()
-                            );
+                            .orElse(new BannerImage());
 
             bannerImage.setBanner(banner);
-
-            bannerImage.setImageData(
-                    file.getBytes()
-            );
-
-            bannerImage.setContentType(
-                    file.getContentType()
-            );
-
-
-            // -------------------------------------------------
-            // SAVE IMAGE TO MYSQL
-            // -------------------------------------------------
+            bannerImage.setImageData(file.getBytes());
+            bannerImage.setContentType(file.getContentType());
 
             BannerImage savedImage =
-                    bannerImageRepository.save(
-                            bannerImage
-                    );
-
-
-            // -------------------------------------------------
-            // RETURN IMAGE URL
-            // -------------------------------------------------
+                    bannerImageRepository.save(bannerImage);
 
             return ResponseEntity.ok(
-                    "/api/images/banners/"
-                    + savedImage.getId()
+                    "/api/banners/images/" + savedImage.getId()
             );
 
-
-        } catch (IOException e) {
+        } catch (Exception e) {
 
             e.printStackTrace();
 
@@ -300,9 +118,15 @@ public class ImageController {
 
     // =====================================================
     // GET BANNER IMAGE
+    //
+    // IMPORTANT:
+    // Do NOT use /api/banners/{id}
+    // because BannerController already uses that URL.
+    //
+    // GET /api/banners/images/{id}
     // =====================================================
 
-    @GetMapping("/banners/{id}")
+    @GetMapping("/banners/images/{id}")
     public ResponseEntity<byte[]> getBannerImage(
             @PathVariable Long id) {
 
@@ -311,25 +135,121 @@ public class ImageController {
                 .map(image -> {
 
                     MediaType mediaType =
-                            MediaType.parseMediaType(
-                                    image.getContentType()
-                            );
+                            MediaType.APPLICATION_OCTET_STREAM;
 
-                    return ResponseEntity.ok()
+                    if (image.getContentType() != null &&
+                            !image.getContentType().isBlank()) {
+
+                        try {
+
+                            mediaType =
+                                    MediaType.parseMediaType(
+                                            image.getContentType()
+                                    );
+
+                        } catch (Exception ignored) {
+                        }
+                    }
+
+                    return ResponseEntity
+                            .ok()
                             .contentType(mediaType)
                             .header(
                                 HttpHeaders.CACHE_CONTROL,
                                 "max-age=31536000"
                             )
-                            .body(
-                                image.getImageData()
-                            );
+                            .body(image.getImageData());
 
                 })
-                .orElseGet(
-                    () -> ResponseEntity
-                            .notFound()
-                            .build()
+                .orElseGet(() ->
+                        ResponseEntity
+                                .notFound()
+                                .build()
+                );
+    }
+
+
+    // =====================================================
+    // OLD BANNER IMAGE URL
+    //
+    // GET /api/images/banners/{id}
+    //
+    // Kept for old frontend compatibility.
+    // =====================================================
+
+    @GetMapping("/images/banners/{id}")
+    public ResponseEntity<byte[]> getOldBannerImage(
+            @PathVariable Long id) {
+
+        return getBannerImage(id);
+    }
+
+
+    // =====================================================
+    // OLD PRODUCT IMAGE URL
+    //
+    // GET /api/images/products/{id}
+    //
+    // Kept for old frontend compatibility.
+    // =====================================================
+
+    @GetMapping("/images/products/{id}")
+    public ResponseEntity<byte[]> getOldProductImage(
+            @PathVariable Long id) {
+
+        return getProductImage(id);
+    }
+
+
+    // =====================================================
+    // GET PRODUCT IMAGE
+    //
+    // GET /api/products/images/{id}
+    //
+    // NOTE:
+    // ProductController already has this endpoint.
+    //
+    // This method is intentionally NOT mapped here.
+    // =====================================================
+
+    private ResponseEntity<byte[]> getProductImage(
+            Long id) {
+
+        return productImageRepository
+                .findById(id)
+                .map(image -> {
+
+                    MediaType mediaType =
+                            MediaType.APPLICATION_OCTET_STREAM;
+
+                    if (image.getContentType() != null &&
+                            !image.getContentType().isBlank()) {
+
+                        try {
+
+                            mediaType =
+                                    MediaType.parseMediaType(
+                                            image.getContentType()
+                                    );
+
+                        } catch (Exception ignored) {
+                        }
+                    }
+
+                    return ResponseEntity
+                            .ok()
+                            .contentType(mediaType)
+                            .header(
+                                HttpHeaders.CACHE_CONTROL,
+                                "max-age=31536000"
+                            )
+                            .body(image.getImageData());
+
+                })
+                .orElseGet(() ->
+                        ResponseEntity
+                                .notFound()
+                                .build()
                 );
     }
 }

@@ -6,10 +6,9 @@ import {
 
 import {
     getProducts,
-    addProduct,
     updateProduct,
     deleteProduct,
-    uploadImage
+    deleteProductImage
 } from "../Api/ProductApi";
 
 import {
@@ -33,12 +32,22 @@ const BACKEND_URL =
 // ADMIN
 // =====================================================
 
+const getBannerImageUrl = (banner) => {
+    if (banner?.images?.length > 0) {
+        return `https://ecom-1-um8s.onrender.com/api/banners/images/${banner.images[0].id}`;
+    }
+
+    return getImageUrl(banner?.image);
+};
+
+
+
 export default function Admin() {
 
     // =====================================================
     // SECTION REFS
     // =====================================================
-
+    const bannerInputRef = useRef(null);
     const bannerManagementRef =
         useRef(null);
 
@@ -66,19 +75,18 @@ export default function Admin() {
 
 
     // =====================================================
-    // PRODUCT IMAGE FILES
+    // PRODUCT IMAGES
     // =====================================================
 
-    const [imageFiles, setImageFiles] =
-        useState([]);
+    // New files selected from computer
+   const [imageFiles, setImageFiles] =
+    useState([]);
 
+const [imagePreview, setImagePreview] =
+    useState([]);
 
-    // =====================================================
-    // PRODUCT IMAGE PREVIEW
-    // =====================================================
-
-    const [imagePreview, setImagePreview] =
-        useState([]);
+const [existingProductImages, setExistingProductImages] =
+    useState([]);
 
 
     // =====================================================
@@ -96,18 +104,11 @@ export default function Admin() {
     const [form, setForm] = useState({
 
         name: "",
-
         category: "",
-
         subcategory: "",
-
         price: "",
-
         offerprice: "",
-
-        description: "",
-
-        image: ""
+        description: ""
 
     });
 
@@ -155,9 +156,7 @@ export default function Admin() {
         useState({
 
             image: "",
-
             title: "",
-
             description: ""
 
         });
@@ -172,34 +171,249 @@ export default function Admin() {
 
 
     // =====================================================
-    // CONVERT IMAGE URL
+    // GENERIC IMAGE URL
     // =====================================================
 
     const getImageUrl = (image) => {
 
-        if (!image) {
+    if (!image) {
+        return "/placeholder.png";
+    }
+
+    // ProductImage object
+    if (
+        typeof image === "object" &&
+        image !== null
+    ) {
+
+        if (image.id) {
+
+            return (
+                `${BACKEND_URL}/api/products/images/${image.id}`
+            );
+        }
+
+        if (image.imageUrl) {
+
+            return getImageUrl(
+                image.imageUrl
+            );
+        }
+
+        if (image.url) {
+
+            return getImageUrl(
+                image.url
+            );
+        }
+
+        if (image.image) {
+
+            return getImageUrl(
+                image.image
+            );
+        }
+
+        return "/placeholder.png";
+    }
+
+    // String
+    if (typeof image !== "string") {
+
+        return "/placeholder.png";
+    }
+
+    const trimmed =
+        image.trim();
+
+    if (!trimmed) {
+
+        return "/placeholder.png";
+    }
+
+    // Blob
+    if (trimmed.startsWith("blob:")) {
+
+        return trimmed;
+    }
+
+    // Full URL
+    if (
+        trimmed.startsWith("http://") ||
+        trimmed.startsWith("https://")
+    ) {
+
+        return trimmed;
+    }
+
+    // Backend relative URL
+    if (trimmed.startsWith("/")) {
+
+        return (
+            `${BACKEND_URL}${trimmed}`
+        );
+    }
+
+    return trimmed;
+};
+    // =====================================================
+    // PRODUCT IMAGE URL
+    // =====================================================
+
+    const getProductImageUrl = (image) => {
+
+    if (!image) {
+        return "/placeholder.png";
+    }
+
+    // ProductImage object
+    if (
+        typeof image === "object" &&
+        image !== null
+    ) {
+
+        if (image.id) {
+
+            return (
+                `${BACKEND_URL}/api/products/images/${image.id}`
+            );
+        }
+
+        if (image.imageUrl) {
+
+            return getProductImageUrl(
+                image.imageUrl
+            );
+        }
+
+        if (image.url) {
+
+            return getProductImageUrl(
+                image.url
+            );
+        }
+
+        if (image.image) {
+
+            return getProductImageUrl(
+                image.image
+            );
+        }
+
+        return "/placeholder.png";
+    }
+
+    // String
+    if (typeof image === "string") {
+
+        const trimmed =
+            image.trim();
+
+        if (!trimmed) {
 
             return "/placeholder.png";
+        }
 
+        if (trimmed.startsWith("blob:")) {
+
+            return trimmed;
         }
 
         if (
-            image.startsWith("http://") ||
-            image.startsWith("https://") ||
-            image.startsWith("blob:")
+            trimmed.startsWith("http://") ||
+            trimmed.startsWith("https://")
         ) {
 
-            return image;
+            return trimmed;
+        }
+
+        if (trimmed.startsWith("/")) {
+
+            return (
+                `${BACKEND_URL}${trimmed}`
+            );
+        }
+
+        return trimmed;
+    }
+
+    return "/placeholder.png";
+};
+
+    // =====================================================
+    // GET PRODUCT IMAGES
+    // =====================================================
+
+    const getProductImages = (product) => {
+
+        if (!product) {
+
+            return [];
 
         }
 
-        if (image.startsWith("/")) {
 
-            return BACKEND_URL + image;
+        // -------------------------------------------------
+        // NEW BACKEND FORMAT
+        // -------------------------------------------------
+
+        if (
+            Array.isArray(product.images)
+        ) {
+
+            return product.images;
 
         }
 
-        return image;
+
+        // -------------------------------------------------
+        // OLD FORMAT SUPPORT
+        // -------------------------------------------------
+
+        if (product.image) {
+
+            if (
+                Array.isArray(product.image)
+            ) {
+
+                return product.image;
+
+            }
+
+
+            if (
+                typeof product.image === "string"
+            ) {
+
+                try {
+
+                    const parsed =
+                        JSON.parse(
+                            product.image
+                        );
+
+                    if (
+                        Array.isArray(parsed)
+                    ) {
+
+                        return parsed;
+
+                    }
+
+                } catch {
+
+                    return [
+                        product.image
+                    ];
+
+                }
+
+            }
+
+        }
+
+
+        return [];
 
     };
 
@@ -214,13 +428,16 @@ export default function Admin() {
 
             setLoadingProducts(true);
 
+
             const data =
                 await getProducts();
 
+
             console.log(
-                "Products:",
+                "Products received:",
                 data
             );
+
 
             setProducts(
                 Array.isArray(data)
@@ -235,7 +452,9 @@ export default function Admin() {
                 error
             );
 
+
             alert(
+                error?.message ||
                 "Failed to load products"
             );
 
@@ -258,13 +477,16 @@ export default function Admin() {
 
             setLoadingBanners(true);
 
+
             const data =
                 await getBanners();
 
+
             console.log(
-                "Banners:",
+                "Banners received:",
                 data
             );
+
 
             setBanners(
                 Array.isArray(data)
@@ -279,7 +501,9 @@ export default function Admin() {
                 error
             );
 
+
             alert(
+                error?.message ||
                 "Failed to load banners"
             );
 
@@ -316,11 +540,13 @@ export default function Admin() {
                 "editingProduct"
             );
 
+
         if (!editingProduct) {
 
             return;
 
         }
+
 
         try {
 
@@ -328,6 +554,7 @@ export default function Admin() {
                 JSON.parse(
                     editingProduct
                 );
+
 
             if (product) {
 
@@ -343,6 +570,7 @@ export default function Admin() {
             );
 
         }
+
 
         localStorage.removeItem(
             "editingProduct"
@@ -362,6 +590,7 @@ export default function Admin() {
             value
         } = event.target;
 
+
         setForm(previous => ({
 
             ...previous,
@@ -369,102 +598,6 @@ export default function Admin() {
             [name]: value
 
         }));
-
-    };
-
-
-    // =====================================================
-    // GET PRODUCT IMAGES
-    // =====================================================
-
-    const getProductImages = (image) => {
-
-        if (!image) {
-
-            return [];
-
-        }
-
-
-        // =================================================
-        // ARRAY
-        // =================================================
-
-        if (Array.isArray(image)) {
-
-            return image.filter(
-                item =>
-                    typeof item === "string" &&
-                    item.trim() !== ""
-            );
-
-        }
-
-
-        // =================================================
-        // STRING
-        // =================================================
-
-        if (typeof image === "string") {
-
-            const trimmed =
-                image.trim();
-
-            if (!trimmed) {
-
-                return [];
-
-            }
-
-
-            // =================================================
-            // JSON ARRAY
-            // =================================================
-
-            try {
-
-                const parsed =
-                    JSON.parse(trimmed);
-
-                if (Array.isArray(parsed)) {
-
-                    return parsed.filter(
-                        item =>
-                            typeof item === "string" &&
-                            item.trim() !== ""
-                    );
-
-                }
-
-            } catch (error) {
-
-                // Normal string
-
-            }
-
-
-            // =================================================
-            // COMMA SEPARATED
-            // =================================================
-
-            if (trimmed.includes(",")) {
-
-                return trimmed
-                    .split(",")
-                    .map(
-                        item =>
-                            item.trim()
-                    )
-                    .filter(Boolean);
-
-            }
-
-
-            return [trimmed];
-
-        }
-
-        return [];
 
     };
 
@@ -480,13 +613,61 @@ export default function Admin() {
                 event.target.files || []
             );
 
+
         if (files.length === 0) {
 
             return;
 
         }
 
-        setImageFiles(files);
+
+        const maxSize =
+            20 * 1024 * 1024;
+
+
+        // -------------------------------------------------
+        // VALIDATE FILES
+        // -------------------------------------------------
+
+        const invalidFile =
+            files.find(
+                file =>
+                    !file.type ||
+                    !file.type.startsWith("image/") ||
+                    file.size > maxSize
+            );
+
+
+        if (invalidFile) {
+
+            alert(
+                `${invalidFile.name} is not a valid image or is larger than 20 MB.`
+            );
+
+
+            event.target.value = "";
+
+            return;
+
+        }
+
+
+        // -------------------------------------------------
+        // SAVE NEW FILES
+        // -------------------------------------------------
+
+        setImageFiles(previous => [
+
+            ...previous,
+
+            ...files
+
+        ]);
+
+
+        // -------------------------------------------------
+        // CREATE NEW PREVIEWS
+        // -------------------------------------------------
 
         const previews =
             files.map(
@@ -494,34 +675,41 @@ export default function Admin() {
                     URL.createObjectURL(file)
             );
 
-        setImagePreview(previews);
+
+        setImagePreview(previous => [
+
+            ...previous,
+
+            ...previews
+
+        ]);
+
+
+        // Reset input so selecting same file again works
+        event.target.value = "";
 
     };
 
 
     // =====================================================
-    // REMOVE PRODUCT IMAGE
+    // REMOVE NEW SELECTED IMAGE
     // =====================================================
+const removeSelectedImage = (index) => {
 
-    const removeSelectedImage = (index) => {
+    setImageFiles(previous =>
+        previous.filter(
+            (_, i) =>
+                i !== index
+        )
+    );
 
-        setImageFiles(previous =>
-            previous.filter(
-                (_, i) =>
-                    i !== index
-            )
-        );
-
-        setImagePreview(previous =>
-            previous.filter(
-                (_, i) =>
-                    i !== index
-            )
-        );
-
-    };
-
-
+    setImagePreview(previous =>
+        previous.filter(
+            (_, i) =>
+                i !== index
+        )
+    );
+};
     // =====================================================
     // SUBMIT PRODUCT
     // =====================================================
@@ -530,102 +718,398 @@ export default function Admin() {
 
         event.preventDefault();
 
+
         if (loading) {
 
             return;
 
         }
 
+
+        // =================================================
+        // VALIDATION
+        // =================================================
+
+        if (!form.name.trim()) {
+
+            alert(
+                "Please enter product name"
+            );
+
+            return;
+
+        }
+
+
+        if (!form.category.trim()) {
+
+            alert(
+                "Please enter category"
+            );
+
+            return;
+
+        }
+
+
+        if (!form.subcategory.trim()) {
+
+            alert(
+                "Please enter subcategory"
+            );
+
+            return;
+
+        }
+
+
+        if (
+            form.price === "" ||
+            Number(form.price) < 0
+        ) {
+
+            alert(
+                "Please enter a valid price"
+            );
+
+            return;
+
+        }
+
+
+        if (
+            form.offerprice === "" ||
+            Number(form.offerprice) < 0
+        ) {
+
+            alert(
+                "Please enter a valid offer price"
+            );
+
+            return;
+
+        }
+
+
+        // -------------------------------------------------
+        // ADD PRODUCT IMAGE CHECK
+        // -------------------------------------------------
+
+        if (
+            !editingId &&
+            imageFiles.length === 0
+        ) {
+
+            alert(
+                "Please select at least one product image"
+            );
+
+            return;
+
+        }
+
+
         setLoading(true);
+
 
         try {
 
-            let imageUrl =
-                form.image || "";
-
-
             // =================================================
-            // UPLOAD PRODUCT IMAGES
+            // ADD PRODUCT
             // =================================================
 
-            if (imageFiles.length > 0) {
+            if (!editingId) {
 
-                const uploadedImages = [];
+                const formData =
+                    new FormData();
 
-                for (
-                    const file of imageFiles
-                ) {
 
-                    console.log(
-                        "Uploading product image:",
-                        file.name
-                    );
+                formData.append(
+                    "name",
+                    form.name.trim()
+                );
 
-                    const url =
-                        await uploadImage(
+
+                formData.append(
+                    "category",
+                    form.category.trim()
+                );
+
+
+                formData.append(
+                    "subcategory",
+                    form.subcategory.trim()
+                );
+
+
+                formData.append(
+                    "price",
+                    String(
+                        Number(form.price)
+                    )
+                );
+
+
+                formData.append(
+                    "offerprice",
+                    String(
+                        Number(form.offerprice)
+                    )
+                );
+
+
+                formData.append(
+                    "description",
+                    form.description.trim()
+                );
+
+
+                // -------------------------------------------------
+                // ADD IMAGES
+                // -------------------------------------------------
+
+                imageFiles.forEach(
+                    file => {
+
+                        formData.append(
+                            "images",
                             file
                         );
 
-                    uploadedImages.push(
-                        url
+                    }
+                );
+
+
+                console.log(
+                    "================================="
+                );
+
+
+                console.log(
+                    "UPLOADING PRODUCT"
+                );
+
+
+                console.log(
+                    "Name:",
+                    form.name
+                );
+
+
+                console.log(
+                    "Category:",
+                    form.category
+                );
+
+
+                console.log(
+                    "Subcategory:",
+                    form.subcategory
+                );
+
+
+                console.log(
+                    "Images:",
+                    imageFiles.length
+                );
+
+
+                console.log(
+                    "================================="
+                );
+
+
+                // -------------------------------------------------
+                // SEND PRODUCT
+                // -------------------------------------------------
+
+                const response =
+                    await fetch(
+                        `${BACKEND_URL}/api/products/upload`,
+                        {
+                            method: "POST",
+                            body: formData
+                        }
+                    );
+
+
+                // -------------------------------------------------
+                // READ RESPONSE
+                // -------------------------------------------------
+
+                const responseText =
+                    await response.text();
+
+
+                console.log(
+                    "Product upload response:",
+                    response.status,
+                    responseText
+                );
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        responseText ||
+                        `Product upload failed (${response.status})`
                     );
 
                 }
 
-                imageUrl =
-                    JSON.stringify(
-                        uploadedImages
+
+                let savedProduct;
+
+
+                try {
+
+                    savedProduct =
+                        JSON.parse(
+                            responseText
+                        );
+
+                } catch {
+
+                    savedProduct =
+                        responseText;
+
+                }
+
+
+                console.log(
+                    "Saved product:",
+                    savedProduct
+                );
+
+
+                if (
+                    savedProduct &&
+                    typeof savedProduct === "object"
+                ) {
+
+                    console.log(
+                        "Saved product images:",
+                        savedProduct.images
                     );
 
+                }
+
+
+                alert(
+                    "Product added successfully"
+                );
+
             }
-
-
-            // =================================================
-            // PRODUCT OBJECT
-            // =================================================
-
-            const product = {
-
-                name:
-                    form.name.trim(),
-
-                category:
-                    form.category.trim(),
-
-                subcategory:
-                    form.subcategory.trim(),
-
-                price:
-                    Number(form.price),
-
-                offerprice:
-                    Number(form.offerprice),
-
-                description:
-                    form.description.trim(),
-
-                image:
-                    imageUrl
-
-            };
-
-
-            console.log(
-                "Saving product:",
-                product
-            );
 
 
             // =================================================
             // UPDATE PRODUCT
             // =================================================
 
-            if (editingId) {
+            else {
+
+                const product = {
+
+                    name:
+                        form.name.trim(),
+
+                    category:
+                        form.category.trim(),
+
+                    subcategory:
+                        form.subcategory.trim(),
+
+                    price:
+                        Number(form.price),
+
+                    offerprice:
+                        Number(form.offerprice),
+
+                    description:
+                        form.description.trim()
+
+                };
+
+
+                console.log(
+                    "Updating product:",
+                    editingId,
+                    product
+                );
+
+
+                // -------------------------------------------------
+                // UPDATE PRODUCT DETAILS
+                // -------------------------------------------------
 
                 await updateProduct(
                     editingId,
                     product
                 );
+
+
+                // -------------------------------------------------
+                // UPLOAD NEW IMAGES
+                // -------------------------------------------------
+
+                if (
+                    imageFiles.length > 0
+                ) {
+
+                    const imageFormData =
+                        new FormData();
+
+
+                    imageFiles.forEach(
+                        file => {
+
+                            imageFormData.append(
+                                "images",
+                                file
+                            );
+
+                        }
+                    );
+
+
+                    console.log(
+                        "Uploading new images for product:",
+                        editingId
+                    );
+
+
+                    const response =
+                        await fetch(
+                            `${BACKEND_URL}/api/products/${editingId}/images`,
+                            {
+                                method: "POST",
+                                body: imageFormData
+                            }
+                        );
+
+
+                    const responseText =
+                        await response.text();
+
+
+                    console.log(
+                        "Image upload response:",
+                        response.status,
+                        responseText
+                    );
+
+
+                    if (!response.ok) {
+
+                        throw new Error(
+                            responseText ||
+                            "Failed to upload product images"
+                        );
+
+                    }
+
+                }
+
 
                 alert(
                     "Product updated successfully"
@@ -635,23 +1119,15 @@ export default function Admin() {
 
 
             // =================================================
-            // ADD PRODUCT
+            // RESET
             // =================================================
 
-            else {
-
-                await addProduct(
-                    product
-                );
-
-                alert(
-                    "Product added successfully"
-                );
-
-            }
-
-
             resetForm();
+
+
+            // =================================================
+            // RELOAD
+            // =================================================
 
             await loadProducts();
 
@@ -661,6 +1137,7 @@ export default function Admin() {
                 "Product save error:",
                 error
             );
+
 
             alert(
                 error?.message ||
@@ -682,67 +1159,77 @@ export default function Admin() {
 
     const handleEdit = (product) => {
 
-        setEditingId(
-            product.id
-        );
+    console.log(
+        "Editing product:",
+        product
+    );
 
+    setEditingId(
+        product.id
+    );
 
-        setForm({
+    setForm({
 
-            name:
-                product.name || "",
+        name:
+            product.name || "",
 
-            category:
-                product.category || "",
+        category:
+            product.category || "",
 
-            subcategory:
-                product.subcategory || "",
+        subcategory:
+            product.subcategory || "",
 
-            price:
-                product.price ?? "",
+        price:
+            product.price ?? "",
 
-            offerprice:
-                product.offerprice ?? "",
+        offerprice:
+            product.offerprice ?? "",
 
-            description:
-                product.description || "",
+        description:
+            product.description || ""
 
-            image:
-                product.image || ""
+    });
+
+    // =================================================
+    // EXISTING IMAGES
+    // =================================================
+
+    const existingImages =
+        getProductImages(product);
+
+    console.log(
+        "Existing images:",
+        existingImages
+    );
+
+    setExistingProductImages(
+        existingImages
+    );
+
+    // =================================================
+    // NEW FILES RESET
+    // =================================================
+
+    setImageFiles([]);
+
+    setImagePreview([]);
+
+    // =================================================
+    // SCROLL
+    // =================================================
+
+    setTimeout(() => {
+
+        productManagementRef.current?.scrollIntoView({
+
+            behavior: "smooth",
+
+            block: "start"
 
         });
 
-
-        const existingImages =
-            getProductImages(
-                product.image
-            );
-
-        setImagePreview(
-            existingImages.map(
-                image =>
-                    getImageUrl(image)
-            )
-        );
-
-        setImageFiles([]);
-
-
-        setTimeout(() => {
-
-            productManagementRef.current?.scrollIntoView({
-
-                behavior: "smooth",
-
-                block: "start"
-
-            });
-
-        }, 100);
-
-    };
-
-
+    }, 100);
+};
     // =====================================================
     // DELETE PRODUCT
     // =====================================================
@@ -754,21 +1241,26 @@ export default function Admin() {
                 "Are you sure you want to delete this product?"
             );
 
+
         if (!confirmed) {
 
             return;
 
         }
 
+
         try {
 
             await deleteProduct(id);
 
+
             setProducts(previous =>
+
                 previous.filter(
                     product =>
                         product.id !== id
                 )
+
             );
 
 
@@ -781,6 +1273,7 @@ export default function Admin() {
 
             }
 
+
             alert(
                 "Product deleted successfully"
             );
@@ -788,11 +1281,13 @@ export default function Admin() {
         } catch (error) {
 
             console.error(
-                "Delete error:",
+                "Delete product error:",
                 error
             );
 
+
             alert(
+                error?.message ||
                 "Failed to delete product"
             );
 
@@ -807,27 +1302,42 @@ export default function Admin() {
 
     const resetForm = () => {
 
+        // Revoke preview URLs
+        imagePreview.forEach(
+            preview => {
+
+                if (
+                    preview &&
+                    preview.startsWith("blob:")
+                ) {
+
+                    URL.revokeObjectURL(
+                        preview
+                    );
+
+                }
+
+            }
+        );
+
+
         setEditingId(null);
 
         setImageFiles([]);
 
         setImagePreview([]);
 
+        setExistingProductImages([]);
+
+
         setForm({
 
             name: "",
-
             category: "",
-
             subcategory: "",
-
             price: "",
-
             offerprice: "",
-
-            description: "",
-
-            image: ""
+            description: ""
 
         });
 
@@ -836,6 +1346,7 @@ export default function Admin() {
             document.getElementById(
                 "product-images"
             );
+
 
         if (fileInput) {
 
@@ -850,16 +1361,26 @@ export default function Admin() {
     // GET FIRST PRODUCT IMAGE
     // =====================================================
 
-    const getFirstImage = (image) => {
+    const getFirstImage = (product) => {
 
         const images =
             getProductImages(
-                image
+                product
             );
 
-        return images.length > 0
-            ? getImageUrl(images[0])
-            : "/placeholder.png";
+
+        if (
+            images.length === 0
+        ) {
+
+            return "/placeholder.png";
+
+        }
+
+
+        return getProductImageUrl(
+            images[0]
+        );
 
     };
 
@@ -874,6 +1395,7 @@ export default function Admin() {
             name,
             value
         } = event.target;
+
 
         setBannerForm(previous => ({
 
@@ -896,13 +1418,66 @@ export default function Admin() {
             const file =
                 event.target.files?.[0];
 
+
             if (!file) {
 
                 return;
 
             }
 
+
+            if (
+                !file.type ||
+                !file.type.startsWith("image/")
+            ) {
+
+                alert(
+                    "Please select a valid image"
+                );
+
+
+                event.target.value = "";
+
+                return;
+
+            }
+
+
+            const maxSize =
+                20 * 1024 * 1024;
+
+
+            if (
+                file.size > maxSize
+            ) {
+
+                alert(
+                    "Banner image must be smaller than 20 MB"
+                );
+
+
+                event.target.value = "";
+
+                return;
+
+            }
+
+
+            // Revoke previous preview
+            if (
+                bannerPreview &&
+                bannerPreview.startsWith("blob:")
+            ) {
+
+                URL.revokeObjectURL(
+                    bannerPreview
+                );
+
+            }
+
+
             setBannerFile(file);
+
 
             setBannerPreview(
                 URL.createObjectURL(
@@ -917,135 +1492,185 @@ export default function Admin() {
     // ADD / UPDATE BANNER
     // =====================================================
 
-    const handleBannerSubmit =
-        async (event) => {
+   const handleBannerSubmit = async (event) => {
+    event.preventDefault();
 
-            event.preventDefault();
+    console.log("🔥 BANNER SUBMIT CLICKED");
 
-            if (bannerLoading) {
+    try {
+        // ==============================
+        // VALIDATION
+        // ==============================
 
-                return;
+        if (!bannerForm.title.trim()) {
+            alert("Please enter banner title");
+            return;
+        }
 
-            }
+        if (!bannerFile && !editingBannerId) {
+            alert("Please select a banner image");
+            return;
+        }
 
-            setBannerLoading(true);
+        // ==============================
+        // EDIT EXISTING BANNER
+        // ==============================
 
-            try {
+        if (editingBannerId) {
 
-                let imageUrl =
-                    bannerForm.image || "";
+            const bannerData = {
+                image: bannerForm.image.trim(),
+                title: bannerForm.title.trim(),
+                description: bannerForm.description.trim()
+            };
 
+            console.log(
+                "Updating banner:",
+                editingBannerId,
+                bannerData
+            );
 
-                // =================================================
-                // IMPORTANT:
-                // BANNER USES uploadBannerImage()
-                // NOT uploadImage()
-                // =================================================
+            await updateBanner(
+                editingBannerId,
+                bannerData
+            );
 
-                if (bannerFile) {
-
-                    console.log(
-                        "Uploading banner image:",
-                        bannerFile.name
-                    );
-
-                    imageUrl =
-                        await uploadBannerImage(
-                            bannerFile
-                        );
-
-                    console.log(
-                        "Banner uploaded:",
-                        imageUrl
-                    );
-
-                }
-
-
-                // =================================================
-                // BANNER OBJECT
-                // =================================================
-
-                const banner = {
-
-                    image:
-                        imageUrl,
-
-                    title:
-                        bannerForm.title.trim(),
-
-                    description:
-                        bannerForm.description.trim()
-
-                };
-
+            // Upload new image if selected
+            if (bannerFile) {
 
                 console.log(
-                    "Saving banner:",
-                    banner
+                    "Uploading image for banner:",
+                    editingBannerId
                 );
 
-
-                // =================================================
-                // UPDATE BANNER
-                // =================================================
-
-                if (editingBannerId) {
-
-                    await updateBanner(
+                const imageUrl =
+                    await uploadBannerImage(
                         editingBannerId,
-                        banner
+                        bannerFile
                     );
 
-                    alert(
-                        "Banner updated successfully"
-                    );
-
-                }
-
-
-                // =================================================
-                // ADD BANNER
-                // =================================================
-
-                else {
-
-                    await addBanner(
-                        banner
-                    );
-
-                    alert(
-                        "Banner added successfully"
-                    );
-
-                }
-
-
-                resetBannerForm();
-
-                await loadBanners();
-
-            } catch (error) {
-
-                console.error(
-                    "Banner save error:",
-                    error
+                console.log(
+                    "Banner image uploaded:",
+                    imageUrl
                 );
-
-                alert(
-                    error?.message ||
-                    "Failed to save banner"
-                );
-
-            } finally {
-
-                setBannerLoading(false);
-
             }
 
-        };
+            alert("Banner updated successfully");
+        }
 
+        // ==============================
+        // ADD NEW BANNER
+        // ==============================
 
+        else {
+
+            const bannerData = {
+                image: "",
+                title: bannerForm.title.trim(),
+                description: bannerForm.description.trim()
+            };
+
+            console.log(
+                "Creating banner:",
+                bannerData
+            );
+
+            // FIRST: create banner
+            const savedBanner =
+                await addBanner(bannerData);
+
+            console.log(
+                "Saved banner:",
+                savedBanner
+            );
+
+            // Get newly created banner ID
+            const bannerId =
+                savedBanner?.id;
+
+            if (!bannerId) {
+                throw new Error(
+                    "Banner created but no banner ID was returned"
+                );
+            }
+
+            console.log(
+                "New banner ID:",
+                bannerId
+            );
+
+            // SECOND: upload image using banner ID
+            if (bannerFile) {
+
+                console.log(
+                    "Uploading banner image for banner:",
+                    bannerId
+                );
+
+                const imageUrl =
+                    await uploadBannerImage(
+                        bannerId,
+                        bannerFile
+                    );
+
+                console.log(
+                    "Banner image uploaded:",
+                    imageUrl
+                );
+            }
+
+            alert("Banner added successfully");
+        }
+
+        // ==============================
+        // RELOAD BANNERS
+        // ==============================
+
+        const updatedBanners =
+            await getBanners();
+
+        console.log(
+            "Banners after save:",
+            updatedBanners
+        );
+
+        setBanners(
+            Array.isArray(updatedBanners)
+                ? updatedBanners
+                : []
+        );
+
+        // ==============================
+        // RESET FORM
+        // ==============================
+
+        setBannerForm({
+            image: "",
+            title: "",
+            description: ""
+        });
+
+        setBannerFile(null);
+        setEditingBannerId(null);
+
+        // Clear file input
+        if (bannerInputRef.current) {
+            bannerInputRef.current.value = "";
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Banner submit error:",
+            error
+        );
+
+        alert(
+            error.message ||
+            "Failed to save banner"
+        );
+    }
+};
     // =====================================================
     // EDIT BANNER
     // =====================================================
@@ -1109,21 +1734,26 @@ export default function Admin() {
                     "Are you sure you want to delete this banner?"
                 );
 
+
             if (!confirmed) {
 
                 return;
 
             }
 
+
             try {
 
                 await deleteBanner(id);
 
+
                 setBanners(previous =>
+
                     previous.filter(
                         banner =>
                             banner.id !== id
                     )
+
                 );
 
 
@@ -1136,6 +1766,7 @@ export default function Admin() {
 
                 }
 
+
                 alert(
                     "Banner deleted successfully"
                 );
@@ -1147,7 +1778,9 @@ export default function Admin() {
                     error
                 );
 
+
                 alert(
+                    error?.message ||
                     "Failed to delete banner"
                 );
 
@@ -1162,18 +1795,29 @@ export default function Admin() {
 
     const resetBannerForm = () => {
 
+        if (
+            bannerPreview &&
+            bannerPreview.startsWith("blob:")
+        ) {
+
+            URL.revokeObjectURL(
+                bannerPreview
+            );
+
+        }
+
+
         setEditingBannerId(null);
 
         setBannerFile(null);
 
         setBannerPreview("");
 
+
         setBannerForm({
 
             image: "",
-
             title: "",
-
             description: ""
 
         });
@@ -1183,6 +1827,7 @@ export default function Admin() {
             document.getElementById(
                 "banner-image"
             );
+
 
         if (input) {
 
@@ -1250,15 +1895,13 @@ export default function Admin() {
 
                     </label>
 
-
-                    <input
-                        id="banner-image"
-                        type="file"
-                        accept="image/*"
-                        onChange={
-                            handleBannerImageChange
-                        }
-                    />
+<input
+    ref={bannerInputRef}
+    id="banner-image"
+    type="file"
+    accept="image/*"
+    onChange={handleBannerImageChange}
+/>
 
 
                     {bannerPreview && (
@@ -1292,6 +1935,7 @@ export default function Admin() {
                         onChange={
                             handleBannerChange
                         }
+                        required
                     />
 
 
@@ -1401,34 +2045,26 @@ export default function Admin() {
                                             }
                                         >
 
-                                            <img
-                                                src={
-                                                    getImageUrl(
-                                                        banner.image
-                                                    )
-                                                }
-                                                alt={
-                                                    banner.title ||
-                                                    "Banner"
-                                                }
-                                            />
+     <img
+    src={getBannerImageUrl(banner)}
+    alt={banner.title || "Banner"}
+    onError={(event) => {
+        event.currentTarget.src = "/placeholder.png";
+    }}
+/>
 
 
                                             <h3>
-
                                                 {
                                                     banner.title
                                                 }
-
                                             </h3>
 
 
                                             <p>
-
                                                 {
                                                     banner.description
                                                 }
-
                                             </p>
 
 
@@ -1441,7 +2077,6 @@ export default function Admin() {
                                                             banner
                                                         )
                                                     }
-                                                    title="Edit Banner"
                                                 >
 
                                                     <i className="bi bi-pencil"></i>
@@ -1458,7 +2093,6 @@ export default function Admin() {
                                                             banner.id
                                                         )
                                                     }
-                                                    title="Delete Banner"
                                                 >
 
                                                     <i className="bi bi-trash"></i>
@@ -1614,6 +2248,10 @@ export default function Admin() {
                     />
 
 
+                    {/* =================================================
+                        PRODUCT IMAGES
+                    ================================================= */}
+
                     <label htmlFor="product-images">
 
                         Product Images
@@ -1631,63 +2269,143 @@ export default function Admin() {
                         }
                     />
 
+{/* =================================================
+    EXISTING PRODUCT IMAGES
+================================================= */}
 
-                    {/* =================================================
-                        PRODUCT IMAGE PREVIEWS
-                    ================================================= */}
+{existingProductImages.length > 0 && (
 
-                    {imagePreview.length > 0 && (
+    <div className="admin-image-preview-container">
 
-                        <div className="admin-image-preview-container">
+        {existingProductImages.map(
+            (image, index) => (
 
-                            {imagePreview.map(
-                                (
-                                    image,
-                                    index
-                                ) => (
+                <div
+                    className="admin-image-preview"
+                    key={`existing-${image.id}`}
+                >
 
-                                    <div
-                                        className="admin-image-preview"
-                                        key={
-                                            `${image}-${index}`
-                                        }
-                                    >
+                    <img
+                        src={
+                            getProductImageUrl(
+                                image
+                            )
+                        }
+                        alt={
+                            `Existing Product ${index + 1}`
+                        }
+                        onError={(event) => {
 
-                                        <img
-                                            src={
-                                                getImageUrl(
-                                                    image
-                                                )
-                                            }
-                                            alt={`Product ${index + 1}`}
-                                        />
+                            event.currentTarget.src =
+                                "/placeholder.png";
 
-                                        {imageFiles.length > 0 && (
+                        }}
+                    />
 
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    removeSelectedImage(
-                                                        index
-                                                    )
-                                                }
-                                                title="Remove image"
-                                            >
+                    <button
+                        type="button"
+                        onClick={async () => {
 
-                                                ×
+                            try {
 
-                                            </button>
+                                if (!image.id) {
 
-                                        )}
+                                    return;
+                                }
 
-                                    </div>
+                                const confirmed =
+                                    window.confirm(
+                                        "Delete this product image?"
+                                    );
 
-                                )
-                            )}
+                                if (!confirmed) {
 
-                        </div>
+                                    return;
+                                }
 
-                    )}
+                                await deleteProductImage(
+                                    image.id
+                                );
+
+                                setExistingProductImages(
+                                    previous =>
+                                        previous.filter(
+                                            item =>
+                                                item.id !==
+                                                image.id
+                                        )
+                                );
+
+                            } catch (error) {
+
+                                console.error(
+                                    "Delete image error:",
+                                    error
+                                );
+
+                                alert(
+                                    error?.message ||
+                                    "Failed to delete image"
+                                );
+                            }
+
+                        }}
+                        title="Delete existing image"
+                    >
+
+                        ×
+
+                    </button>
+
+                </div>
+            )
+        )}
+
+    </div>
+)}
+
+
+{/* =================================================
+    NEW IMAGE PREVIEWS
+================================================= */}
+
+{imagePreview.length > 0 && (
+
+    <div className="admin-image-preview-container">
+
+        {imagePreview.map(
+            (image, index) => (
+
+                <div
+                    className="admin-image-preview"
+                    key={`new-${index}`}
+                >
+
+                    <img
+                        src={image}
+                        alt={
+                            `New Product ${index + 1}`
+                        }
+                    />
+
+                    <button
+                        type="button"
+                        onClick={() =>
+                            removeSelectedImage(index)
+                        }
+                        title="Remove image"
+                    >
+
+                        ×
+
+                    </button>
+
+                </div>
+            )
+        )}
+
+    </div>
+)}
 
 
                     <label>
@@ -1798,18 +2516,32 @@ export default function Admin() {
                                             }
                                         >
 
+                                            {/* -----------------------------------------
+                                                PRODUCT IMAGE
+                                            ----------------------------------------- */}
+
                                             <img
                                                 src={
                                                     getFirstImage(
-                                                        product.image
+                                                        product
                                                     )
                                                 }
                                                 alt={
                                                     product.name ||
                                                     "Product"
                                                 }
+                                                onError={(event) => {
+
+                                                    event.currentTarget.src =
+                                                        "/placeholder.png";
+
+                                                }}
                                             />
 
+
+                                            {/* -----------------------------------------
+                                                ACTIONS
+                                            ----------------------------------------- */}
 
                                             <div className="admin-actions">
 
@@ -1847,6 +2579,10 @@ export default function Admin() {
                                             </div>
 
 
+                                            {/* -----------------------------------------
+                                                NAME
+                                            ----------------------------------------- */}
+
                                             <h3>
 
                                                 {
@@ -1855,6 +2591,10 @@ export default function Admin() {
 
                                             </h3>
 
+
+                                            {/* -----------------------------------------
+                                                CATEGORY
+                                            ----------------------------------------- */}
 
                                             <p>
 
@@ -1869,6 +2609,10 @@ export default function Admin() {
                                             </p>
 
 
+                                            {/* -----------------------------------------
+                                                SUBCATEGORY
+                                            ----------------------------------------- */}
+
                                             <p>
 
                                                 <strong>
@@ -1881,6 +2625,10 @@ export default function Admin() {
 
                                             </p>
 
+
+                                            {/* -----------------------------------------
+                                                PRICE
+                                            ----------------------------------------- */}
 
                                             <div className="admin-product-price">
 
@@ -1901,6 +2649,31 @@ export default function Admin() {
                                                 </del>
 
                                             </div>
+
+
+                                            {/* -----------------------------------------
+                                                IMAGE COUNT
+                                            ----------------------------------------- */}
+
+                                            <small>
+
+                                                {
+                                                    getProductImages(
+                                                        product
+                                                    ).length
+                                                }
+
+                                                {" "}
+
+                                                {
+                                                    getProductImages(
+                                                        product
+                                                    ).length === 1
+                                                        ? "image"
+                                                        : "images"
+                                                }
+
+                                            </small>
 
                                         </div>
 

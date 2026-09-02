@@ -84,57 +84,77 @@ export default function Home() {
     // =====================================================
     // GET BANNER IMAGE
     // =====================================================
+// =====================================================
+// GET BANNER IMAGE
+// =====================================================
 
-    const getBannerImage = (banner) => {
+const getBannerImage = (banner) => {
 
-        if (!banner || !banner.image) {
-            return "";
+    if (!banner) {
+        return "";
+    }
+
+    // =================================================
+    // NEW DATABASE IMAGE
+    // BannerImage is stored in MySQL as BLOB
+    // =================================================
+
+    if (
+        Array.isArray(banner.images) &&
+        banner.images.length > 0
+    ) {
+
+        const bannerImage =
+            banner.images[0];
+
+        if (bannerImage?.id) {
+
+            return `${BACKEND_URL}/api/banners/images/${bannerImage.id}`;
+
         }
+    }
 
-        let image = banner.image;
+    // =================================================
+    // OLD IMAGE FIELD
+    // Keep this for old banners that still use
+    // the "image" column.
+    // =================================================
 
-        // ---------------------------------------------
-        // Image is a string
-        // ---------------------------------------------
+    if (
+        typeof banner.image === "string" &&
+        banner.image.trim()
+    ) {
 
-        if (typeof image === "string") {
+        const image =
+            banner.image.trim();
 
-            image = image.trim();
+        // Old JSON array stored as string
+        try {
 
-            if (!image) {
-                return "";
-            }
+            const parsed =
+                JSON.parse(image);
 
-            // -----------------------------------------
-            // Handle JSON array accidentally stored
-            // -----------------------------------------
+            if (Array.isArray(parsed)) {
 
-            try {
-
-                const parsed =
-                    JSON.parse(image);
-
-                if (Array.isArray(parsed)) {
-
-                    if (parsed.length === 0) {
-                        return "";
-                    }
+                if (parsed.length > 0) {
 
                     return getImageUrl(
                         parsed[0]
                     );
+
                 }
 
-            } catch {
-                // Normal string
             }
 
-            return getImageUrl(image);
+        } catch {
+            // Normal string
         }
 
-        return "";
-    };
+        return getImageUrl(image);
+    }
 
+    return "";
+};
     // =====================================================
     // LOAD PRODUCTS
     // =====================================================
@@ -628,8 +648,9 @@ export default function Home() {
                                                         image
                                                     );
 
-                                                    event.currentTarget.src =
-                                                        "/placeholder.png";
+                                                    event.currentTarget.onerror = null;
+                                                    event.currentTarget.src = "/placeholder.png";
+
 
                                                 }}
 

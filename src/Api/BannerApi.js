@@ -1,8 +1,13 @@
+// =====================================================
+// BANNER API
+// =====================================================
+
 const API_URL =
     "https://ecom-1-um8s.onrender.com/api/banners";
 
 const IMAGE_API_URL =
-    "https://ecom-1-um8s.onrender.com/api/images/upload";
+    "https://ecom-1-um8s.onrender.com/api";
+
 
 // =====================================================
 // GET ALL BANNERS
@@ -32,6 +37,10 @@ export const getBanners = async () => {
 // =====================================================
 
 export const getBanner = async (id) => {
+
+    if (!id) {
+        throw new Error("Banner ID is required");
+    }
 
     const response =
         await fetch(
@@ -68,22 +77,101 @@ export const addBanner = async (banner) => {
                     "Content-Type": "application/json"
                 },
 
-                body:
-                    JSON.stringify(banner)
+                body: JSON.stringify(banner)
             }
         );
 
+    const responseText =
+        await response.text();
+
+    console.log(
+        "Add banner:",
+        response.status,
+        responseText
+    );
+
     if (!response.ok) {
 
-        const errorText =
-            await response.text();
-
         throw new Error(
-            `Failed to add banner: ${response.status} ${errorText}`
+            `Failed to add banner: ${response.status} ${responseText}`
         );
     }
 
-    return response.json();
+    return JSON.parse(responseText);
+};
+
+
+// =====================================================
+// UPDATE BANNER
+// =====================================================
+
+export const uploadBannerImage = async (
+    bannerId,
+    file
+) => {
+
+    if (!bannerId) {
+        throw new Error("Banner ID is required");
+    }
+
+    if (!file) {
+        throw new Error("No banner image selected");
+    }
+
+    if (
+        !file.type ||
+        !file.type.startsWith("image/")
+    ) {
+        throw new Error("Please select a valid image");
+    }
+
+    const maxSize =
+        20 * 1024 * 1024;
+
+    if (file.size > maxSize) {
+        throw new Error(
+            "Banner image must be smaller than 20 MB"
+        );
+    }
+
+    const formData =
+        new FormData();
+
+    formData.append(
+        "image",
+        file
+    );
+
+    formData.append(
+        "bannerId",
+        String(bannerId)
+    );
+
+    const response =
+        await fetch(
+            `${IMAGE_API_URL}/banners/upload`,
+            {
+                method: "POST",
+                body: formData
+            }
+        );
+
+    const responseText =
+        await response.text();
+
+    console.log(
+        "Banner image upload:",
+        response.status,
+        responseText
+    );
+
+    if (!response.ok) {
+        throw new Error(
+            `Banner image upload failed: ${response.status} ${responseText}`
+        );
+    }
+
+    return responseText.trim();
 };
 
 
@@ -96,6 +184,10 @@ export const updateBanner = async (
     banner
 ) => {
 
+    if (!id) {
+        throw new Error("Banner ID is required");
+    }
+
     const response =
         await fetch(
             `${API_URL}/${id}`,
@@ -103,26 +195,30 @@ export const updateBanner = async (
                 method: "PUT",
 
                 headers: {
-                    "Content-Type":
-                        "application/json"
+                    "Content-Type": "application/json"
                 },
 
-                body:
-                    JSON.stringify(banner)
+                body: JSON.stringify(banner)
             }
         );
 
+    const responseText =
+        await response.text();
+
+    console.log(
+        "Update banner:",
+        response.status,
+        responseText
+    );
+
     if (!response.ok) {
 
-        const errorText =
-            await response.text();
-
         throw new Error(
-            `Failed to update banner: ${response.status} ${errorText}`
+            `Failed to update banner: ${response.status} ${responseText}`
         );
     }
 
-    return response.json();
+    return JSON.parse(responseText);
 };
 
 
@@ -131,6 +227,10 @@ export const updateBanner = async (
 // =====================================================
 
 export const deleteBanner = async (id) => {
+
+    if (!id) {
+        throw new Error("Banner ID is required");
+    }
 
     console.log(
         "DELETE BANNER:",
@@ -145,56 +245,15 @@ export const deleteBanner = async (id) => {
             }
         );
 
+    const responseText =
+        await response.text();
+
     if (!response.ok) {
 
-        const errorText =
-            await response.text();
-
         throw new Error(
-            `Failed to delete banner: ${response.status} ${errorText}`
+            `Failed to delete banner: ${response.status} ${responseText}`
         );
     }
 
     return true;
-};
-
-
-// =====================================================
-// UPLOAD BANNER IMAGE
-// =====================================================
-
-export const uploadBannerImage = async (file) => {
-
-    if (!file) {
-        throw new Error("No banner image selected");
-    }
-
-    if (!file.type.startsWith("image/")) {
-        throw new Error("Please select a valid image");
-    }
-
-    const formData = new FormData();
-
-    formData.append("image", file);
-
-    const response = await fetch(
-        "https://ecom-1-um8s.onrender.com/api/images/upload",
-        {
-            method: "POST",
-            body: formData
-        }
-    );
-
-    const responseText = await response.text();
-
-    console.log("Banner upload status:", response.status);
-    console.log("Banner upload response:", responseText);
-
-    if (!response.ok) {
-        throw new Error(
-            `Banner image upload failed: ${response.status} ${responseText}`
-        );
-    }
-
-    return responseText.trim();
 };

@@ -110,70 +110,72 @@ export default function Subcategory() {
 
     const loadProducts = async () => {
 
-        try {
+    try {
 
-            setLoading(true);
+        setLoading(true);
 
+        const response = await getProducts();
 
-            const response =
-                await getProducts();
+        console.log(
+    "PRODUCTS FROM DATABASE:",
+    response
+);
 
+console.log(
+    "FIRST PRODUCT:",
+    response?.[0]
+);
 
-            console.log(
-                "PRODUCTS FROM DATABASE:",
-                response.data
-            );
+        // =================================================
+        // API returns array directly
+        // =================================================
 
+        if (Array.isArray(response)) {
 
-            // Axios response
-
-            if (
-                response &&
-                Array.isArray(response.data)
-            ) {
-
-                setProducts(
-                    response.data
-                );
-
-            }
-
-            // If API directly returns array
-
-            else if (
-                Array.isArray(response)
-            ) {
-
-                setProducts(
-                    response
-                );
-
-            }
-
-            else {
-
-                setProducts([]);
-
-            }
-
-        } catch (error) {
-
-            console.error(
-                "Failed to load products:",
-                error
-            );
-
-
-            setProducts([]);
-
-        } finally {
-
-            setLoading(false);
+            setProducts(response);
 
         }
 
-    };
+        // =================================================
+        // Axios response fallback
+        // =================================================
 
+        else if (
+            response &&
+            Array.isArray(response.data)
+        ) {
+
+            setProducts(response.data);
+
+        }
+
+        else {
+
+            console.error(
+                "Unexpected products response:",
+                response
+            );
+
+            setProducts([]);
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Failed to load products:",
+            error
+        );
+
+        setProducts([]);
+
+    } finally {
+
+        setLoading(false);
+
+    }
+
+};
 
     // =====================================================
     // FILTER SUBCATEGORY

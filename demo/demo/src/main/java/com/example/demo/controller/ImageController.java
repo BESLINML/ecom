@@ -1,10 +1,7 @@
-
 package com.example.demo.controller;
 
 import com.example.demo.entity.Banner;
 import com.example.demo.entity.BannerImage;
-import com.example.demo.entity.Product;
-import com.example.demo.entity.ProductImage;
 import com.example.demo.repository.BannerImageRepository;
 import com.example.demo.repository.BannerRepository;
 import com.example.demo.repository.ProductImageRepository;
@@ -45,7 +42,6 @@ public class ImageController {
         this.bannerImageRepository = bannerImageRepository;
     }
 
-
     // =====================================================
     // BANNER IMAGE UPLOAD
     //
@@ -63,6 +59,7 @@ public class ImageController {
         try {
 
             if (file == null || file.isEmpty()) {
+
                 return ResponseEntity
                         .badRequest()
                         .body("Please select a banner image");
@@ -76,11 +73,13 @@ public class ImageController {
                         .body("Only image files are allowed");
             }
 
-            Banner banner = bannerRepository
-                    .findById(bannerId)
-                    .orElse(null);
+            Banner banner =
+                    bannerRepository
+                            .findById(bannerId)
+                            .orElse(null);
 
             if (banner == null) {
+
                 return ResponseEntity
                         .notFound()
                         .build();
@@ -93,13 +92,18 @@ public class ImageController {
 
             bannerImage.setBanner(banner);
             bannerImage.setImageData(file.getBytes());
-            bannerImage.setContentType(file.getContentType());
+            bannerImage.setContentType(
+                    file.getContentType()
+            );
 
             BannerImage savedImage =
-                    bannerImageRepository.save(bannerImage);
+                    bannerImageRepository.save(
+                            bannerImage
+                    );
 
             return ResponseEntity.ok(
-                    "/api/banners/images/" + savedImage.getId()
+                    "/api/banners/images/" +
+                    savedImage.getId()
             );
 
         } catch (Exception e) {
@@ -109,19 +113,14 @@ public class ImageController {
             return ResponseEntity
                     .internalServerError()
                     .body(
-                        "Banner image upload failed: "
-                        + e.getMessage()
+                        "Banner image upload failed: " +
+                        e.getMessage()
                     );
         }
     }
 
-
     // =====================================================
     // GET BANNER IMAGE
-    //
-    // IMPORTANT:
-    // Do NOT use /api/banners/{id}
-    // because BannerController already uses that URL.
     //
     // GET /api/banners/images/{id}
     // =====================================================
@@ -135,31 +134,20 @@ public class ImageController {
                 .map(image -> {
 
                     MediaType mediaType =
-                            MediaType.APPLICATION_OCTET_STREAM;
-
-                    if (image.getContentType() != null &&
-                            !image.getContentType().isBlank()) {
-
-                        try {
-
-                            mediaType =
-                                    MediaType.parseMediaType(
-                                            image.getContentType()
-                                    );
-
-                        } catch (Exception ignored) {
-                        }
-                    }
+                            getMediaType(
+                                    image.getContentType()
+                            );
 
                     return ResponseEntity
                             .ok()
                             .contentType(mediaType)
                             .header(
                                 HttpHeaders.CACHE_CONTROL,
-                                "max-age=31536000"
+                                "public, max-age=31536000"
                             )
-                            .body(image.getImageData());
-
+                            .body(
+                                image.getImageData()
+                            );
                 })
                 .orElseGet(() ->
                         ResponseEntity
@@ -168,29 +156,60 @@ public class ImageController {
                 );
     }
 
-
     // =====================================================
-    // OLD BANNER IMAGE URL
+    // GET PRODUCT IMAGE
     //
-    // GET /api/images/banners/{id}
+    // THIS IS THE IMPORTANT ENDPOINT
     //
-    // Kept for old frontend compatibility.
+    // GET /api/products/images/{id}
     // =====================================================
 
-    @GetMapping("/images/banners/{id}")
-    public ResponseEntity<byte[]> getOldBannerImage(
+    @GetMapping("/products/images/{id}")
+    public ResponseEntity<byte[]> getProductImage(
             @PathVariable Long id) {
 
-        return getBannerImage(id);
-    }
+        return productImageRepository
+                .findById(id)
+                .map(image -> {
 
+                    MediaType mediaType =
+                            getMediaType(
+                                    image.getContentType()
+                            );
+
+                    byte[] imageData =
+                            image.getImageData();
+
+                    if (imageData == null ||
+                            imageData.length == 0) {
+
+                        return ResponseEntity
+                                .status(404)
+                                .<byte[]>build();
+                    }
+
+                    return ResponseEntity
+                            .ok()
+                            .contentType(mediaType)
+                            .header(
+                                HttpHeaders.CACHE_CONTROL,
+                                "public, max-age=31536000"
+                            )
+                            .body(imageData);
+                })
+                .orElseGet(() ->
+                        ResponseEntity
+                                .notFound()
+                                .build()
+                );
+    }
 
     // =====================================================
     // OLD PRODUCT IMAGE URL
     //
     // GET /api/images/products/{id}
     //
-    // Kept for old frontend compatibility.
+    // Keep for old frontend compatibility
     // =====================================================
 
     @GetMapping("/images/products/{id}")
@@ -200,56 +219,43 @@ public class ImageController {
         return getProductImage(id);
     }
 
-
     // =====================================================
-    // GET PRODUCT IMAGE
+    // OLD BANNER IMAGE URL
     //
-    // GET /api/products/images/{id}
+    // GET /api/images/banners/{id}
     //
-    // NOTE:
-    // ProductController already has this endpoint.
-    //
-    // This method is intentionally NOT mapped here.
+    // Keep for old frontend compatibility
     // =====================================================
 
-    private ResponseEntity<byte[]> getProductImage(
-            Long id) {
+    @GetMapping("/images/banners/{id}")
+    public ResponseEntity<byte[]> getOldBannerImage(
+            @PathVariable Long id) {
 
-        return productImageRepository
-                .findById(id)
-                .map(image -> {
+        return getBannerImage(id);
+    }
 
-                    MediaType mediaType =
-                            MediaType.APPLICATION_OCTET_STREAM;
+    // =====================================================
+    // MEDIA TYPE
+    // =====================================================
 
-                    if (image.getContentType() != null &&
-                            !image.getContentType().isBlank()) {
+    private MediaType getMediaType(
+            String contentType) {
 
-                        try {
+        if (
+            contentType != null &&
+            !contentType.isBlank()
+        ) {
 
-                            mediaType =
-                                    MediaType.parseMediaType(
-                                            image.getContentType()
-                                    );
+            try {
 
-                        } catch (Exception ignored) {
-                        }
-                    }
-
-                    return ResponseEntity
-                            .ok()
-                            .contentType(mediaType)
-                            .header(
-                                HttpHeaders.CACHE_CONTROL,
-                                "max-age=31536000"
-                            )
-                            .body(image.getImageData());
-
-                })
-                .orElseGet(() ->
-                        ResponseEntity
-                                .notFound()
-                                .build()
+                return MediaType.parseMediaType(
+                        contentType
                 );
+
+            } catch (Exception ignored) {
+            }
+        }
+
+        return MediaType.APPLICATION_OCTET_STREAM;
     }
 }

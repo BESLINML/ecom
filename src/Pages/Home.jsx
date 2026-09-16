@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 
 import { getProducts } from "../Api/ProductApi";
@@ -10,8 +9,7 @@ import CategoryProducts from "./CategoryProducts";
 // BACKEND URL
 // =====================================================
 
-const BACKEND_URL =
-    "https://ecom-1-um8s.onrender.com";
+const BACKEND_URL = "https://ecom-1-um8s.onrender.com";
 
 // =====================================================
 // HOME
@@ -24,7 +22,6 @@ export default function Home() {
     // =====================================================
 
     const [products, setProducts] = useState([]);
-
     const [loading, setLoading] = useState(true);
 
     // =====================================================
@@ -32,16 +29,13 @@ export default function Home() {
     // =====================================================
 
     const [banners, setBanners] = useState([]);
-
-    const [loadingBanners, setLoadingBanners] =
-        useState(true);
+    const [loadingBanners, setLoadingBanners] = useState(true);
 
     // =====================================================
     // SLIDER
     // =====================================================
 
     const [index, setIndex] = useState(1);
-
     const [isMoving, setIsMoving] = useState(true);
 
     // =====================================================
@@ -54,6 +48,47 @@ export default function Home() {
             return "";
         }
 
+        // -------------------------------------------------
+        // Number = database image ID
+        // -------------------------------------------------
+
+        if (typeof image === "number") {
+            return `${BACKEND_URL}/api/products/images/${image}`;
+        }
+
+        // -------------------------------------------------
+        // Object = ProductImage / BannerImage
+        // -------------------------------------------------
+
+        if (typeof image === "object") {
+
+            const imageId =
+                image.id ??
+                image.imageId ??
+                image.productImageId ??
+                image.bannerImageId;
+
+            if (imageId) {
+
+                return `${BACKEND_URL}/api/products/images/${imageId}`;
+            }
+
+            const objectUrl =
+                image.url ??
+                image.imageUrl ??
+                image.path;
+
+            if (objectUrl) {
+                return getImageUrl(objectUrl);
+            }
+
+            return "";
+        }
+
+        // -------------------------------------------------
+        // String
+        // -------------------------------------------------
+
         if (typeof image !== "string") {
             return "";
         }
@@ -64,7 +99,7 @@ export default function Home() {
             return "";
         }
 
-        // Already a complete URL
+        // Already complete URL
         if (
             trimmedImage.startsWith("http://") ||
             trimmedImage.startsWith("https://") ||
@@ -75,7 +110,7 @@ export default function Home() {
 
         // Backend relative path
         if (trimmedImage.startsWith("/")) {
-            return BACKEND_URL + trimmedImage;
+            return `${BACKEND_URL}${trimmedImage}`;
         }
 
         return trimmedImage;
@@ -84,77 +119,88 @@ export default function Home() {
     // =====================================================
     // GET BANNER IMAGE
     // =====================================================
-// =====================================================
-// GET BANNER IMAGE
-// =====================================================
 
-const getBannerImage = (banner) => {
+    const getBannerImage = (banner) => {
 
-    if (!banner) {
-        return "";
-    }
-
-    // =================================================
-    // NEW DATABASE IMAGE
-    // BannerImage is stored in MySQL as BLOB
-    // =================================================
-
-    if (
-        Array.isArray(banner.images) &&
-        banner.images.length > 0
-    ) {
-
-        const bannerImage =
-            banner.images[0];
-
-        if (bannerImage?.id) {
-
-            return `${BACKEND_URL}/api/banners/images/${bannerImage.id}`;
-
+        if (!banner) {
+            return "";
         }
-    }
 
-    // =================================================
-    // OLD IMAGE FIELD
-    // Keep this for old banners that still use
-    // the "image" column.
-    // =================================================
+        // -------------------------------------------------
+        // NEW DATABASE IMAGE
+        // banner.images
+        // -------------------------------------------------
 
-    if (
-        typeof banner.image === "string" &&
-        banner.image.trim()
-    ) {
+        if (
+            Array.isArray(banner.images) &&
+            banner.images.length > 0
+        ) {
 
-        const image =
-            banner.image.trim();
+            const bannerImage = banner.images[0];
 
-        // Old JSON array stored as string
-        try {
+            // Database object with ID
+            if (bannerImage?.id) {
 
-            const parsed =
-                JSON.parse(image);
-
-            if (Array.isArray(parsed)) {
-
-                if (parsed.length > 0) {
-
-                    return getImageUrl(
-                        parsed[0]
-                    );
-
-                }
-
+                return `${BACKEND_URL}/api/banners/images/${bannerImage.id}`;
             }
 
-        } catch {
-            // Normal string
+            // String / URL
+            const imageUrl = getImageUrl(bannerImage);
+
+            if (imageUrl) {
+                return imageUrl;
+            }
         }
 
-        return getImageUrl(image);
-    }
+        // -------------------------------------------------
+        // banner.image
+        // -------------------------------------------------
 
-    return "";
-};
+        if (banner.image) {
+
+            // Object
+            if (typeof banner.image === "object") {
+
+                const imageUrl =
+                    getImageUrl(banner.image);
+
+                if (imageUrl) {
+                    return imageUrl;
+                }
+            }
+
+            // String
+            if (
+                typeof banner.image === "string" &&
+                banner.image.trim()
+            ) {
+
+                const image = banner.image.trim();
+
+                // Old JSON array stored as string
+                try {
+
+                    const parsed = JSON.parse(image);
+
+                    if (Array.isArray(parsed)) {
+
+                        if (parsed.length > 0) {
+
+                            return getImageUrl(parsed[0]);
+                        }
+                    }
+
+                } catch {
+                    // Normal string
+                }
+
+                return getImageUrl(image);
+            }
+        }
+
+        return "";
+    };
+
     // =====================================================
     // LOAD PRODUCTS
     // =====================================================
@@ -167,8 +213,7 @@ const getBannerImage = (banner) => {
 
                 setLoading(true);
 
-                const data =
-                    await getProducts();
+                const data = await getProducts();
 
                 console.log(
                     "Products from Spring Boot:",
@@ -193,7 +238,6 @@ const getBannerImage = (banner) => {
             } finally {
 
                 setLoading(false);
-
             }
         };
 
@@ -213,8 +257,7 @@ const getBannerImage = (banner) => {
 
                 setLoadingBanners(true);
 
-                const data =
-                    await getBanners();
+                const data = await getBanners();
 
                 console.log(
                     "Banners from Spring Boot:",
@@ -228,7 +271,6 @@ const getBannerImage = (banner) => {
                 } else {
 
                     setBanners([]);
-
                 }
 
             } catch (error) {
@@ -243,7 +285,6 @@ const getBannerImage = (banner) => {
             } finally {
 
                 setLoadingBanners(false);
-
             }
         };
 
@@ -255,11 +296,10 @@ const getBannerImage = (banner) => {
     // VALID BANNERS
     // =====================================================
 
-    const validBanners =
-        banners.filter(
-            banner =>
-                getBannerImage(banner) !== ""
-        );
+    const validBanners = banners.filter(
+        banner =>
+            getBannerImage(banner) !== ""
+    );
 
     // =====================================================
     // CREATE INFINITE SLIDES
@@ -299,15 +339,13 @@ const getBannerImage = (banner) => {
         }
 
         setIsMoving(false);
-
         setIndex(1);
 
-        const timer =
-            setTimeout(() => {
+        const timer = setTimeout(() => {
 
-                setIsMoving(true);
+            setIsMoving(true);
 
-            }, 50);
+        }, 50);
 
         return () => {
             clearTimeout(timer);
@@ -325,17 +363,13 @@ const getBannerImage = (banner) => {
             return;
         }
 
-        const timer =
-            setInterval(() => {
+        const timer = setInterval(() => {
 
-                setIsMoving(true);
+            setIsMoving(true);
 
-                setIndex(
-                    previous =>
-                        previous + 1
-                );
+            setIndex(previous => previous + 1);
 
-            }, 5000);
+        }, 5000);
 
         return () => {
 
@@ -351,25 +385,19 @@ const getBannerImage = (banner) => {
 
     useEffect(() => {
 
-        if (
-            validBanners.length <= 1
-        ) {
+        if (validBanners.length <= 1) {
             return;
         }
 
-        if (
-            index ===
-            slides.length - 1
-        ) {
+        if (index === slides.length - 1) {
 
-            const timer =
-                setTimeout(() => {
+            const timer = setTimeout(() => {
 
-                    setIsMoving(false);
+                setIsMoving(false);
 
-                    setIndex(1);
+                setIndex(1);
 
-                }, 2500);
+            }, 2500);
 
             return () => {
 
@@ -392,12 +420,11 @@ const getBannerImage = (banner) => {
 
         if (!isMoving) {
 
-            const timer =
-                setTimeout(() => {
+            const timer = setTimeout(() => {
 
-                    setIsMoving(true);
+                setIsMoving(true);
 
-                }, 50);
+            }, 50);
 
             return () => {
 
@@ -412,42 +439,30 @@ const getBannerImage = (banner) => {
     // GROUP PRODUCTS BY SUBCATEGORY
     // =====================================================
 
-    const groupedProducts =
-        products.reduce(
+    const groupedProducts = products.reduce(
+        (groups, product) => {
 
-            (groups, product) => {
-
-                if (
-                    !product.subcategory ||
-                    !product.subcategory.trim()
-                ) {
-
-                    return groups;
-
-                }
-
-                const subcategory =
-                    product.subcategory.trim();
-
-                if (
-                    !groups[subcategory]
-                ) {
-
-                    groups[subcategory] = [];
-
-                }
-
-                groups[subcategory].push(
-                    product
-                );
-
+            if (
+                !product.subcategory ||
+                !product.subcategory.trim()
+            ) {
                 return groups;
+            }
 
-            },
+            const subcategory =
+                product.subcategory.trim();
 
-            {}
+            if (!groups[subcategory]) {
+                groups[subcategory] = [];
+            }
 
-        );
+            groups[subcategory].push(product);
+
+            return groups;
+
+        },
+        {}
+    );
 
     // =====================================================
     // GET RANDOM 4 PRODUCTS
@@ -462,30 +477,22 @@ const getBannerImage = (banner) => {
             `home_random_products_${subcategory}`;
 
         const savedIds =
-            localStorage.getItem(
-                storageKey
-            );
+            localStorage.getItem(storageKey);
 
         if (savedIds) {
 
             try {
 
-                const ids =
-                    JSON.parse(
-                        savedIds
-                    );
+                const ids = JSON.parse(savedIds);
 
                 const savedProducts =
                     ids
-                        .map(
-                            id =>
-                                productList.find(
-                                    product =>
-                                        String(
-                                            product.id
-                                        ) ===
-                                        String(id)
-                                )
+                        .map(id =>
+                            productList.find(
+                                product =>
+                                    String(product.id) ===
+                                    String(id)
+                            )
                         )
                         .filter(Boolean);
 
@@ -501,7 +508,6 @@ const getBannerImage = (banner) => {
                 ) {
 
                     return savedProducts;
-
                 }
 
             } catch (error) {
@@ -510,14 +516,12 @@ const getBannerImage = (banner) => {
                     "Error reading saved random products:",
                     error
                 );
-
             }
         }
 
         const shuffled =
             [...productList].sort(
-                () =>
-                    Math.random() - 0.5
+                () => Math.random() - 0.5
             );
 
         const selected =
@@ -529,8 +533,7 @@ const getBannerImage = (banner) => {
                 storageKey,
                 JSON.stringify(
                     selected.map(
-                        product =>
-                            product.id
+                        product => product.id
                     )
                 )
             );
@@ -541,7 +544,6 @@ const getBannerImage = (banner) => {
                 "Unable to save random products:",
                 error
             );
-
         }
 
         return selected;
@@ -561,9 +563,7 @@ const getBannerImage = (banner) => {
 
             <section className="hero-banner">
 
-                {/* ---------------------------------------------
-                    LOADING
-                --------------------------------------------- */}
+                {/* LOADING */}
 
                 {loadingBanners && (
 
@@ -577,9 +577,7 @@ const getBannerImage = (banner) => {
 
                 )}
 
-                {/* ---------------------------------------------
-                    NO BANNERS
-                --------------------------------------------- */}
+                {/* NO BANNERS */}
 
                 {!loadingBanners &&
                     validBanners.length === 0 && (
@@ -594,18 +592,14 @@ const getBannerImage = (banner) => {
 
                     )}
 
-                {/* ---------------------------------------------
-                    HERO SLIDER
-                --------------------------------------------- */}
+                {/* HERO SLIDER */}
 
                 {!loadingBanners &&
                     validBanners.length > 0 && (
 
                         <div
                             className="hero-slider"
-
                             style={{
-
                                 transform:
                                     `translateX(-${index * 100}%)`,
 
@@ -614,7 +608,6 @@ const getBannerImage = (banner) => {
                                     validBanners.length > 1
                                         ? "transform 2.5s ease-in-out"
                                         : "none"
-
                             }}
                         >
 
@@ -626,6 +619,15 @@ const getBannerImage = (banner) => {
                                             banner
                                         );
 
+                                    console.log(
+                                        "BANNER:",
+                                        banner.title,
+                                        "IMAGES:",
+                                        banner.images,
+                                        "FINAL IMAGE:",
+                                        image
+                                    );
+
                                     return (
 
                                         <div
@@ -635,7 +637,6 @@ const getBannerImage = (banner) => {
 
                                             <img
                                                 src={image}
-
                                                 alt={
                                                     banner.title ||
                                                     "Hero Banner"
@@ -648,23 +649,20 @@ const getBannerImage = (banner) => {
                                                         image
                                                     );
 
-                                                    event.currentTarget.onerror = null;
-                                                    event.currentTarget.src = "/placeholder.png";
+                                                    event.currentTarget.onerror =
+                                                        null;
 
-
+                                                    event.currentTarget.src =
+                                                        "/placeholder.png";
                                                 }}
-
                                             />
 
                                         </div>
-
                                     );
-
                                 }
                             )}
 
                         </div>
-
                     )}
 
             </section>
@@ -676,94 +674,59 @@ const getBannerImage = (banner) => {
             <section className="home-specialcat">
 
                 <div>
-
                     <img
                         src="/sm1.webp"
                         alt="Trending Gifts"
                     />
-
-                    <h4>
-                        Trending Gifts
-                    </h4>
-
+                    <h4>Trending Gifts</h4>
                 </div>
 
                 <div>
-
                     <img
                         src="/sm2.webp"
                         alt="Bestsellers"
                     />
-
-                    <h4>
-                        Bestsellers
-                    </h4>
-
+                    <h4>Bestsellers</h4>
                 </div>
 
                 <div>
-
                     <img
                         src="/sm3.webp"
                         alt="Wedding Gifts"
                     />
-
-                    <h4>
-                        Wedding Gifts
-                    </h4>
-
+                    <h4>Wedding Gifts</h4>
                 </div>
 
                 <div>
-
                     <img
                         src="/sm4.webp"
                         alt="Gifts Under 999"
                     />
-
-                    <h4>
-                        Gifts Under 999
-                    </h4>
-
+                    <h4>Gifts Under 999</h4>
                 </div>
 
                 <div>
-
                     <img
                         src="/rg1.webp"
                         alt="Special Offers"
                     />
-
-                    <h4>
-                        Special Offers
-                    </h4>
-
+                    <h4>Special Offers</h4>
                 </div>
 
                 <div>
-
                     <img
                         src="/cus-gift32.webp"
                         alt="Limited Edition"
                     />
-
-                    <h4>
-                        Limited Edition
-                    </h4>
-
+                    <h4>Limited Edition</h4>
                 </div>
 
                 <div>
-
                     <img
                         src="/tg12.webp"
                         alt="New Arrivals"
                     />
-
-                    <h4>
-                        New Arrivals
-                    </h4>
-
+                    <h4>New Arrivals</h4>
                 </div>
 
             </section>
@@ -809,11 +772,9 @@ const getBannerImage = (banner) => {
                 products.length > 0 && (
 
                     <>
-
                         {Object.entries(
                             groupedProducts
                         ).map(
-
                             ([
                                 subcategory,
                                 productList
@@ -828,40 +789,26 @@ const getBannerImage = (banner) => {
                                 if (
                                     randomProducts.length === 0
                                 ) {
-
                                     return null;
-
                                 }
 
                                 return (
 
                                     <CategoryProducts
-
-                                        key={
-                                            subcategory
-                                        }
-
+                                        key={subcategory}
                                         subcategory={
                                             subcategory
                                         }
-
                                         products={
                                             randomProducts
                                         }
-
                                     />
-
                                 );
-
                             }
-
                         )}
-
                     </>
-
                 )}
 
         </div>
-
     );
 }

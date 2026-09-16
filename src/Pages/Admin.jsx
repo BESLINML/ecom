@@ -33,11 +33,32 @@ const BACKEND_URL =
 // =====================================================
 
 const getBannerImageUrl = (banner) => {
-    if (banner?.images?.length > 0) {
-        return `https://ecom-1-um8s.onrender.com/api/banners/images/${banner.images[0].id}`;
+    if (!banner) return null;
+
+    // Backend returns images: [...]
+    if (Array.isArray(banner.images) && banner.images.length > 0) {
+        const firstImage = banner.images[0];
+
+        // If images[0] is an object: { id: 123 }
+        if (typeof firstImage === "object" && firstImage?.id) {
+            return `https://ecom-1-um8s.onrender.com/api/products/images/${firstImage.id}`;
+        }
+
+        // If images[0] is directly an image ID
+        if (
+            typeof firstImage === "number" ||
+            (typeof firstImage === "string" && firstImage.trim() !== "")
+        ) {
+            return `https://ecom-1-um8s.onrender.com/api/products/images/${firstImage}`;
+        }
     }
 
-    return getImageUrl(banner?.image);
+    // Old image field fallback
+    if (typeof banner.image === "string" && banner.image.trim() !== "") {
+        return banner.image;
+    }
+
+    return null;
 };
 
 
@@ -2045,10 +2066,15 @@ const removeSelectedImage = (index) => {
                                             }
                                         >
 
-     <img
+ <img
     src={getBannerImageUrl(banner)}
     alt={banner.title || "Banner"}
     onError={(event) => {
+        console.error(
+            "BANNER IMAGE FAILED:",
+            getBannerImageUrl(banner)
+        );
+
         event.currentTarget.src = "/placeholder.png";
     }}
 />

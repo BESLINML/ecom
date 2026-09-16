@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -8,9 +7,7 @@ import { deleteProduct } from "../Api/ProductApi";
 // BACKEND URL
 // =====================================================
 
-const BACKEND_URL =
-    "https://ecom-1-um8s.onrender.com";
-
+const BACKEND_URL = "https://ecom-1-um8s.onrender.com";
 
 // =====================================================
 // CATEGORY PRODUCTS
@@ -23,7 +20,6 @@ export default function CategoryProducts({
 
     const navigate = useNavigate();
 
-
     // =====================================================
     // ADMIN CHECK
     // =====================================================
@@ -32,10 +28,9 @@ export default function CategoryProducts({
 
     useEffect(() => {
 
-        const user =
-            JSON.parse(
-                localStorage.getItem("user") || "null"
-            );
+        const user = JSON.parse(
+            localStorage.getItem("user") || "null"
+        );
 
         console.log("CATEGORY USER:", user);
         console.log("CATEGORY ROLE:", user?.role);
@@ -46,14 +41,11 @@ export default function CategoryProducts({
 
     }, []);
 
-
     // =====================================================
     // RANDOM PRODUCTS
     // =====================================================
 
-    const [randomProducts, setRandomProducts] =
-        useState([]);
-
+    const [randomProducts, setRandomProducts] = useState([]);
 
     // =====================================================
     // UPDATE RANDOM PRODUCTS
@@ -66,7 +58,6 @@ export default function CategoryProducts({
             setRandomProducts([]);
 
             return;
-
         }
 
         const shuffled =
@@ -78,7 +69,6 @@ export default function CategoryProducts({
 
     }, [products]);
 
-
     // =====================================================
     // ADMIN = ALL PRODUCTS
     // USER = 4 PRODUCTS
@@ -88,7 +78,6 @@ export default function CategoryProducts({
         isAdmin
             ? products
             : randomProducts;
-
 
     // =====================================================
     // DELETE PRODUCT
@@ -101,15 +90,13 @@ export default function CategoryProducts({
 
         event.stopPropagation();
 
-        const confirmed =
-            window.confirm(
-                `Are you sure you want to delete "${product.name}"?`
-            );
+        const confirmed = window.confirm(
+            `Are you sure you want to delete "${product.name}"?`
+        );
 
         if (!confirmed) {
             return;
         }
-
 
         try {
 
@@ -119,7 +106,6 @@ export default function CategoryProducts({
                 "Product deleted successfully"
             );
 
-
             setRandomProducts(
                 previous =>
                     previous.filter(
@@ -127,7 +113,6 @@ export default function CategoryProducts({
                             item.id !== product.id
                     )
             );
-
 
         } catch (error) {
 
@@ -139,11 +124,8 @@ export default function CategoryProducts({
             alert(
                 "Failed to delete product"
             );
-
         }
-
     };
-
 
     // =====================================================
     // EDIT PRODUCT
@@ -162,9 +144,7 @@ export default function CategoryProducts({
         );
 
         navigate("/admin");
-
     };
-
 
     // =====================================================
     // RETURN
@@ -172,20 +152,15 @@ export default function CategoryProducts({
 
     return (
 
-        <section
-            className="home-category-section"
-        >
+        <section className="home-category-section">
 
             {/* CATEGORY HEADER */}
 
-            <div
-                className="home-category-header"
-            >
+            <div className="home-category-header">
 
                 <h2>
                     {subcategory}
                 </h2>
-
 
                 <button
                     type="button"
@@ -202,12 +177,9 @@ export default function CategoryProducts({
 
             </div>
 
-
             {/* PRODUCT ROW */}
 
-            <div
-                className="home-product-row"
-            >
+            <div className="home-product-row">
 
                 {displayedProducts.map(
                     product => (
@@ -238,24 +210,19 @@ export default function CategoryProducts({
             </div>
 
         </section>
-
     );
-
 }
-
 
 // =====================================================
 // PRODUCT CARD
 // =====================================================
 
 export function ProductCard({
-
     product,
     onClick,
     isAdmin,
     onEdit,
     onDelete
-
 }) {
 
     const [imageIndex, setImageIndex] =
@@ -263,7 +230,6 @@ export function ProductCard({
 
     const [isHovered, setIsHovered] =
         useState(false);
-
 
     // =====================================================
     // ADMIN CHECK
@@ -279,42 +245,76 @@ export function ProductCard({
             ?.toString()
             .toUpperCase() === "ADMIN";
 
-
     // =====================================================
-    // CONVERT IMAGE PATH TO URL
+    // GET IMAGE URL
     // =====================================================
 
     const getImageUrl = (image) => {
 
         if (!image) {
-
-            return "/placeholder.png";
-
+            return "";
         }
 
+        // =================================================
+        // DATABASE IMAGE OBJECT
+        // =================================================
 
-        if (
-            typeof image !== "string"
-        ) {
+        if (typeof image === "object") {
 
-            return "/placeholder.png";
+            const imageId =
+                image.id ??
+                image.imageId ??
+                image.productImageId;
 
+            if (imageId) {
+
+                console.log(
+                    "DATABASE IMAGE ID:",
+                    imageId
+                );
+
+                return `${BACKEND_URL}/api/products/images/${imageId}`;
+            }
+
+            const objectUrl =
+                image.url ??
+                image.imageUrl ??
+                image.path;
+
+            if (objectUrl) {
+
+                return getImageUrl(objectUrl);
+            }
+
+            return "";
         }
 
+        // =================================================
+        // DATABASE IMAGE ID
+        // =================================================
+
+        if (typeof image === "number") {
+
+            return `${BACKEND_URL}/api/products/images/${image}`;
+        }
+
+        // =================================================
+        // STRING
+        // =================================================
+
+        if (typeof image !== "string") {
+            return "";
+        }
 
         const trimmed =
             image.trim();
 
-
         if (!trimmed) {
-
-            return "/placeholder.png";
-
+            return "";
         }
 
-
         // =================================================
-        // FULL URL
+        // COMPLETE URL
         // =================================================
 
         if (
@@ -324,32 +324,32 @@ export function ProductCard({
         ) {
 
             return trimmed;
-
         }
 
+        // =================================================
+        // API IMAGE PATH
+        // =================================================
+
+        if (
+            trimmed.startsWith("/api/")
+        ) {
+
+            return `${BACKEND_URL}${trimmed}`;
+        }
 
         // =================================================
-        // BACKEND UPLOADED IMAGE
-        // /uploads/xxx.webp
+        // UPLOAD PATH
         // =================================================
 
         if (
             trimmed.startsWith("/uploads/")
         ) {
 
-            return (
-                BACKEND_URL +
-                trimmed
-            );
-
+            return `${BACKEND_URL}${trimmed}`;
         }
-
 
         // =================================================
         // FRONTEND PUBLIC IMAGE
-        // /cus-gift2.webp
-        // /hm1.webp
-        // /birth-gift1.webp
         // =================================================
 
         if (
@@ -357,126 +357,127 @@ export function ProductCard({
         ) {
 
             return trimmed;
-
         }
-
 
         // =================================================
         // FALLBACK
         // =================================================
 
         return trimmed;
-
     };
 
+    // =====================================================
+    // GET PRODUCT IMAGES
+    // =====================================================
 
-   // =====================================================
-// GET PRODUCT IMAGES
-// =====================================================
+    const getProductImages = (product) => {
 
-const getProductImages = (product) => {
+    if (!product) {
+        return [];
+    }
 
-    // ============================================
-    // 1. Spring Boot database images
-    // ============================================
-
+    // DATABASE IMAGES
     if (
-        Array.isArray(product?.images) &&
+        Array.isArray(product.images) &&
         product.images.length > 0
     ) {
 
-        const backendImages = product.images
-            .filter(image => image && image.id)
-            .map(
-                image =>
-                    `${BACKEND_URL}/api/products/images/${image.id}`
-            );
+        return product.images
+            .map(image => {
 
-        if (backendImages.length > 0) {
-            return backendImages;
-        }
+                const imageId =
+                    image?.id ??
+                    image?.imageId ??
+                    image?.productImageId;
+
+                if (!imageId) {
+                    return "";
+                }
+
+                return `${BACKEND_URL}/api/products/images/${imageId}`;
+            })
+            .filter(Boolean);
     }
 
-
-    // ============================================
-    // 2. React public-folder images
-    // product.image = ["/gift1.webp", "/gift2.webp"]
-    // ============================================
-
-    if (Array.isArray(product?.image)) {
-
-        const publicImages = product.image
-            .filter(
-                image =>
-                    typeof image === "string" &&
-                    image.trim() !== ""
-            )
-            .map(image => getImageUrl(image));
-
-        if (publicImages.length > 0) {
-            return publicImages;
-        }
-    }
-
-
-    // ============================================
-    // 3. Single public-folder image
-    // product.image = "/gift1.webp"
-    // ============================================
-
+    // OLD IMAGE ARRAY
     if (
-        typeof product?.image === "string" &&
-        product.image.trim() !== ""
+        Array.isArray(product.image) &&
+        product.image.length > 0
     ) {
 
-        return [
-            getImageUrl(product.image)
-        ];
+        return product.image
+            .map(image => getImageUrl(image))
+            .filter(Boolean);
     }
 
+    // OLD SINGLE IMAGE
+    if (product.image) {
 
-    // ============================================
-    // 4. No image
-    // ============================================
+        const image = getImageUrl(product.image);
+
+        if (image) {
+            return [image];
+        }
+    }
 
     return [];
 };
-// =====================================================
-// PRODUCT IMAGES
-// =====================================================
-
-const productImages =
-    getProductImages(product);
-
-
-
     // =====================================================
-    // DEBUG IMAGE URL
+    // PRODUCT IMAGES
     // =====================================================
 
-console.log(
-    "PRODUCT:",
-    product?.name,
-    "ID:",
-    product?.id,
-    "DATABASE IMAGES:",
-    product?.images,
-    "FINAL IMAGE URL:",
-    productImages
-);
+    const productImages =
+        getProductImages(product);
+
+    // =====================================================
+    // DEBUG
+    // =====================================================
+
+    console.log(
+        "======================================"
+    );
+
+    console.log(
+        "PRODUCT:",
+        product?.name
+    );
+
+    console.log(
+        "PRODUCT ID:",
+        product?.id
+    );
+
+    console.log(
+        "DATABASE IMAGES:",
+        product?.images
+    );
+
+    console.log(
+        "OLD IMAGE:",
+        product?.image
+    );
+
+    console.log(
+        "FINAL IMAGE URL:",
+        productImages
+    );
+
+    console.log(
+        "======================================"
+    );
 
     // =====================================================
     // RESET IMAGE
     // =====================================================
-useEffect(() => {
 
-    setImageIndex(0);
+    useEffect(() => {
 
-}, [
-    product?.id,
-    product?.images
-]);
+        setImageIndex(0);
 
+    }, [
+        product?.id,
+        product?.images
+    ]);
 
     // =====================================================
     // HOVER IMAGE SLIDER
@@ -490,9 +491,7 @@ useEffect(() => {
         ) {
 
             return;
-
         }
-
 
         const interval =
             setInterval(() => {
@@ -507,12 +506,9 @@ useEffect(() => {
 
             }, 1000);
 
-
         return () => {
 
-            clearInterval(
-                interval
-            );
+            clearInterval(interval);
 
         };
 
@@ -522,7 +518,6 @@ useEffect(() => {
         productImages.length
     ]);
 
-
     // =====================================================
     // PRICE
     // =====================================================
@@ -530,10 +525,8 @@ useEffect(() => {
     const price =
         Number(product?.price) || 0;
 
-
     const offerprice =
         Number(product?.offerprice) || 0;
-
 
     // =====================================================
     // DISCOUNT
@@ -542,23 +535,20 @@ useEffect(() => {
     const discount =
         price > 0 &&
         offerprice > 0
-
             ? Math.round(
                 (
                     (price - offerprice) /
                     price
                 ) * 100
             )
-
             : 0;
-
 
     // =====================================================
     // CURRENT IMAGE
     // =====================================================
-const currentImage =
-    productImages[imageIndex];
 
+    const currentImage =
+        productImages[imageIndex];
 
     // =====================================================
     // CARD
@@ -588,27 +578,48 @@ const currentImage =
                 IMAGE
             ================================================= */}
 
-            <div
-                className="home-product-image"
-            >
+            <div className="home-product-image">
 
-                <img
-    src={currentImage}
-    alt={product?.name || "Product"}
+                {currentImage ? (
 
-    onError={(event) => {
+                    <img
+                        src={currentImage}
+                        alt={
+                            product?.name ||
+                            "Product"
+                        }
 
-        console.error(
-            "IMAGE LOAD FAILED:",
-            currentImage
-        );
+                        onError={(event) => {
 
-        event.currentTarget.style.display = "none";
-    }}
-/>
+                            console.error(
+                                "IMAGE LOAD FAILED:",
+                                currentImage
+                            );
+
+                            console.error(
+                                "PRODUCT:",
+                                product
+                            );
+
+                            event.currentTarget.onerror =
+                                null;
+
+                            event.currentTarget.style.display =
+                                "none";
+                        }}
+                    />
+
+                ) : (
+
+                    <div
+                        className="product-no-image"
+                    >
+                        No Image
+                    </div>
+
+                )}
 
             </div>
-
 
             {/* =================================================
                 ADMIN BUTTONS
@@ -626,7 +637,6 @@ const currentImage =
 
                     <button
                         type="button"
-
                         className="home-edit-btn"
 
                         onClick={(event) =>
@@ -639,10 +649,8 @@ const currentImage =
                         Edit
                     </button>
 
-
                     <button
                         type="button"
-
                         className="home-delete-btn"
 
                         onClick={(event) =>
@@ -656,50 +664,35 @@ const currentImage =
                     </button>
 
                 </div>
-
             )}
-
 
             {/* =================================================
                 PRODUCT INFORMATION
             ================================================= */}
 
-            <div
-                className="home-product-info"
-            >
+            <div className="home-product-info">
 
                 <h3>
                     {product?.name}
                 </h3>
 
+                <div className="product-price">
 
-                <div
-                    className="product-price"
-                >
-
-                    <span
-                        className="offer-price"
-                    >
+                    <span className="offer-price">
                         ₹{offerprice}
                     </span>
 
-
                     {price > 0 && (
 
-                        <span
-                            className="original-price"
-                        >
+                        <span className="original-price">
                             ₹{price}
                         </span>
 
                     )}
 
-
                     {discount > 0 && (
 
-                        <span
-                            className="discount"
-                        >
+                        <span className="discount">
                             {discount}% OFF
                         </span>
 
@@ -710,7 +703,5 @@ const currentImage =
             </div>
 
         </div>
-
     );
-
 }

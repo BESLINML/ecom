@@ -1,9 +1,13 @@
+
 // =====================================================
 // PRODUCT API
 // =====================================================
 
-const API_URL =
-    "https://ecom-1-um8s.onrender.com/api/products";
+export const API_BASE_URL =
+    "https://ecom-1-um8s.onrender.com";
+
+export const API_URL =
+    `${API_BASE_URL}/api/products`;
 
 
 // =====================================================
@@ -12,13 +16,11 @@ const API_URL =
 
 export const getProducts = async () => {
 
-    const response =
-        await fetch(API_URL);
+    const response = await fetch(API_URL);
 
     if (!response.ok) {
 
-        const errorText =
-            await response.text();
+        const errorText = await response.text();
 
         throw new Error(
             `Failed to fetch products: ${response.status} ${errorText}`
@@ -103,8 +105,7 @@ export const addProductWithImages = async (
         throw new Error("Product data is required");
     }
 
-    const formData =
-        new FormData();
+    const formData = new FormData();
 
     formData.append(
         "name",
@@ -136,11 +137,12 @@ export const addProductWithImages = async (
         product.description || ""
     );
 
+
     // =================================================
     // IMAGES
     // =================================================
 
-    imageFiles.forEach(file => {
+    imageFiles.forEach((file) => {
 
         if (file) {
 
@@ -150,6 +152,7 @@ export const addProductWithImages = async (
             );
         }
     });
+
 
     // =================================================
     // REQUEST
@@ -261,8 +264,9 @@ export const uploadProductImages = async (
     const maxSize =
         20 * 1024 * 1024;
 
+
     // =================================================
-    // VALIDATE
+    // VALIDATE IMAGES
     // =================================================
 
     for (const file of imageFiles) {
@@ -289,6 +293,7 @@ export const uploadProductImages = async (
         }
     }
 
+
     // =================================================
     // FORMDATA
     // =================================================
@@ -296,7 +301,7 @@ export const uploadProductImages = async (
     const formData =
         new FormData();
 
-    imageFiles.forEach(file => {
+    imageFiles.forEach((file) => {
 
         if (file) {
 
@@ -306,6 +311,7 @@ export const uploadProductImages = async (
             );
         }
     });
+
 
     // =================================================
     // REQUEST
@@ -378,18 +384,229 @@ export const getProductImages = async (
 // GET PRODUCT IMAGE URL
 // =====================================================
 
-export const getProductImageUrl = (
-    imageId
-) => {
+export const getProductImageUrl = (image) => {
 
-    if (!imageId) {
+    // -------------------------------------------------
+    // No image
+    // -------------------------------------------------
 
+    if (!image) {
         return "/placeholder.png";
     }
 
-    return (
-        `${API_URL}/images/${imageId}`
-    );
+
+    // -------------------------------------------------
+    // Backend returned an image ID or URL string
+    // -------------------------------------------------
+
+    if (
+        typeof image === "number" ||
+        typeof image === "string"
+    ) {
+
+        const value =
+            String(image).trim();
+
+        if (!value) {
+            return "/placeholder.png";
+        }
+
+
+        // Already complete URL
+        if (
+            value.startsWith("http://") ||
+            value.startsWith("https://")
+        ) {
+
+            return value;
+        }
+
+
+        // Backend API path
+        if (value.startsWith("/api/")) {
+
+            return `${API_BASE_URL}${value}`;
+        }
+
+
+        // Relative image path
+        if (
+            value.startsWith("/images/") ||
+            value.startsWith("/uploads/")
+        ) {
+
+            return `${API_BASE_URL}${value}`;
+        }
+
+
+        // Assume value is image ID
+        return `${API_URL}/images/${value}`;
+    }
+
+
+    // -------------------------------------------------
+    // Backend returned image object
+    // -------------------------------------------------
+
+    if (
+        typeof image === "object"
+    ) {
+
+        const imageId =
+            image.id ??
+            image.imageId ??
+            image.productImageId;
+
+
+        // Image ID exists
+        if (imageId) {
+
+            return `${API_URL}/images/${imageId}`;
+        }
+
+
+        // Possible URL fields
+        const imageUrl =
+            image.url ??
+            image.imageUrl ??
+            image.path;
+
+
+        if (
+            typeof imageUrl === "string" &&
+            imageUrl.trim() !== ""
+        ) {
+
+            const value =
+                imageUrl.trim();
+
+
+            // Complete URL
+            if (
+                value.startsWith("http://") ||
+                value.startsWith("https://")
+            ) {
+
+                return value;
+            }
+
+
+            // API path
+            if (
+                value.startsWith("/api/") ||
+                value.startsWith("/images/") ||
+                value.startsWith("/uploads/")
+            ) {
+
+                return `${API_BASE_URL}${value}`;
+            }
+
+            return `${API_BASE_URL}/${value.replace(/^\/+/, "")}`;
+        }
+    }
+
+
+    // -------------------------------------------------
+    // Fallback
+    // -------------------------------------------------
+
+    return "/placeholder.png";
+};
+
+
+// =====================================================
+// GET IMAGES DIRECTLY FROM PRODUCT
+// =====================================================
+
+export const getProductImagesFromProduct = (
+    product
+) => {
+
+    if (!product) {
+        return ["/placeholder.png"];
+    }
+
+
+    // =================================================
+    // NEW BACKEND FIELD: images
+    // =================================================
+
+    if (
+        Array.isArray(product.images) &&
+        product.images.length > 0
+    ) {
+
+        const urls =
+            product.images
+                .map((image) =>
+                    getProductImageUrl(image)
+                )
+                .filter(
+                    (url) =>
+                        url &&
+                        url !== "/placeholder.png"
+                );
+
+        if (urls.length > 0) {
+            return urls;
+        }
+    }
+
+
+    // =================================================
+    // OLD FIELD: image[]
+    // =================================================
+
+    if (
+        Array.isArray(product.image) &&
+        product.image.length > 0
+    ) {
+
+        const urls =
+            product.image
+                .map((image) =>
+                    getProductImageUrl(image)
+                )
+                .filter(
+                    (url) =>
+                        url &&
+                        url !== "/placeholder.png"
+                );
+
+        if (urls.length > 0) {
+            return urls;
+        }
+    }
+
+
+    // =================================================
+    // OLD FIELD: image
+    // =================================================
+
+    if (
+        typeof product.image === "string" ||
+        typeof product.image === "number" ||
+        typeof product.image === "object"
+    ) {
+
+        const url =
+            getProductImageUrl(product.image);
+
+        if (
+            url &&
+            url !== "/placeholder.png"
+        ) {
+
+            return [url];
+        }
+    }
+
+
+    // =================================================
+    // FALLBACK
+    // =================================================
+
+    return ["/placeholder.png"];
 };
 
 

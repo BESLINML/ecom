@@ -301,45 +301,7 @@ public class ProductController {
         );
     }
 
-    // =====================================================
-    // GET PRODUCT IMAGE
-    //
-    // GET /api/products/images/{imageId}
-    // =====================================================
-
-    @GetMapping("/images/{imageId}")
-    public ResponseEntity<byte[]> getProductImage(
-            @PathVariable Long imageId) {
-
-        ProductImage image =
-                productImageRepository.findById(imageId)
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                    "Image not found with id: " +
-                                    imageId
-                                )
-                        );
-
-        MediaType mediaType;
-
-        try {
-
-            mediaType =
-                    MediaType.parseMediaType(
-                            image.getContentType()
-                    );
-
-        } catch (Exception e) {
-
-            mediaType =
-                    MediaType.APPLICATION_OCTET_STREAM;
-        }
-
-        return ResponseEntity.ok()
-                .contentType(mediaType)
-                .body(image.getImageData());
-    }
-
+    
     // =====================================================
     // GET ALL IMAGES FOR PRODUCT
     //

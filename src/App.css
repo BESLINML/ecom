@@ -896,11 +896,26 @@ img {
     color: #777;
 }
 
+.subcategory-image-wrapper {
+    width: 100%;
+    height: 280px;
+    overflow: hidden;
+    background: #f8f8f8;
+}
+
 .subcategory-image-wrapper img {
     width: 100%;
     height: 100%;
     object-fit: contain;
     display: block;
+}
+
+@media (max-width: 768px) {
+
+    .subcategory-image-wrapper {
+        height: 220px;
+    }
+
 }
 /* =========================================================
    BACK BUTTON
@@ -947,29 +962,19 @@ img {
 
 .subcategory-card {
     background: #fff;
-
     border-radius: 15px;
-
     overflow: hidden;
-
     cursor: pointer;
-
     transition: transform 0.3s ease;
+    width: 100%;
+    min-width: 0;
 }
 
 .subcategory-card:hover {
     transform: translateY(-5px);
 }
 
-.subcategory-card img {
-    width: 100%;
 
-    height: 280px;
-
-    display: block;
-
-    object-fit: cover;
-}
 
 .subcategory-card h3 {
     margin: 15px 10px;
@@ -2771,8 +2776,7 @@ img {
         border-radius: 10px;
     }
 
-    .home-product-image,
-    .subcategory-card img {
+    .home-product-image{
         width: 100%;
 
         height: 175px;

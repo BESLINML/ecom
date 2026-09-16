@@ -362,84 +362,60 @@ export default function Subcategory() {
 
     const getProductImage = (product) => {
 
-        if (!product) {
-            return "";
-        }
-
-        // =================================================
-        // FIRST PRIORITY:
-        // DATABASE ProductImage[]
-        // =================================================
-
-        if (
-            Array.isArray(product.images) &&
-            product.images.length > 0
-        ) {
-
-            const imageUrl =
-                product.images
-                    .map(image =>
-                        getDatabaseImageUrl(image)
-                    )
-                    .find(Boolean);
-
-            if (imageUrl) {
-
-                console.log(
-                    "PRODUCT:",
-                    product.name,
-                    "ID:",
-                    product.id,
-                    "DATABASE IMAGES:",
-                    product.images,
-                    "FINAL IMAGE URL:",
-                    imageUrl
-                );
-
-                return imageUrl;
-            }
-        }
-
-        // =================================================
-        // OLD product.image ARRAY
-        // =================================================
-
-        if (
-            Array.isArray(product.image) &&
-            product.image.length > 0
-        ) {
-
-            const imageUrl =
-                product.image
-                    .map(image =>
-                        getDatabaseImageUrl(image)
-                    )
-                    .find(Boolean);
-
-            if (imageUrl) {
-                return imageUrl;
-            }
-        }
-
-        // =================================================
-        // OLD SINGLE IMAGE
-        // =================================================
-
-        if (product.image) {
-
-            const imageUrl =
-                getDatabaseImageUrl(
-                    product.image
-                );
-
-            if (imageUrl) {
-                return imageUrl;
-            }
-        }
-
+    if (!product) {
         return "";
-    };
+    }
 
+    // DATABASE IMAGE
+    if (
+        Array.isArray(product.images) &&
+        product.images.length > 0
+    ) {
+
+        const firstImage = product.images[0];
+
+        if (firstImage?.id) {
+
+            const imageUrl =
+                `${BACKEND_URL}/api/products/images/${firstImage.id}`;
+
+            console.log(
+                "SUBCATEGORY IMAGE:",
+                product.name,
+                imageUrl
+            );
+
+            return imageUrl;
+        }
+    }
+
+    // OLD IMAGE ARRAY
+    if (
+        Array.isArray(product.image) &&
+        product.image.length > 0
+    ) {
+
+        const imageUrl =
+            getDatabaseImageUrl(product.image[0]);
+
+        if (imageUrl) {
+            return imageUrl;
+        }
+    }
+
+    // OLD SINGLE IMAGE
+    if (product.image) {
+
+        const imageUrl =
+            getDatabaseImageUrl(product.image);
+
+        if (imageUrl) {
+            return imageUrl;
+        }
+    }
+
+    return "";
+};
     // =====================================================
     // LOADING
     // =====================================================
@@ -590,44 +566,26 @@ export default function Subcategory() {
 
                                 <div className="subcategory-image-wrapper">
 
-                                    {productImage ? (
+    {productImage ? (
 
-                                        <img
-                                            src={productImage}
-                                            alt={
-                                                product.name ||
-                                                "Product"
-                                            }
-                                            loading="lazy"
-                                            onError={event => {
+        <img
+            src={productImage}
+            alt={product.name || "Product"}
+            loading="lazy"
+            onError={event => {
+                
+            }}
+        />
 
-                                                console.error(
-                                                    "SUBCATEGORY IMAGE FAILED:",
-                                                    productImage
-                                                );
+    ) : (
 
-                                                console.error(
-                                                    "PRODUCT:",
-                                                    product
-                                                );
+        <div className="subcategory-no-image">
+            No Image
+        </div>
 
-                                                event.currentTarget.style.display =
-                                                    "none";
-                                            }}
-                                        />
+    )}
 
-                                    ) : (
-
-                                        <div
-                                            className="subcategory-no-image"
-                                        >
-                                            No Image
-                                        </div>
-
-                                    )}
-
-                                </div>
-
+</div>
                                 {/* =================================================
                                     PRODUCT NAME
                                 ================================================= */}

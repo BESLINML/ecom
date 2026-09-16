@@ -1,48 +1,24 @@
 import { useEffect, useState, useContext } from "react";
-
-import {useParams, useNavigate} from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 import { CartContext } from "./CartContext";
+import { getProducts, deleteProduct } from "../Api/ProductApi";
 
-import { getProducts, deleteProduct} from "../Api/ProductApi";
-
+const BACKEND_URL = "https://ecom-1-um8s.onrender.com";
 
 export default function ProductDetails() {
 
-    const { addToCart } =
-        useContext(CartContext);
+    const { addToCart } = useContext(CartContext);
 
+    const [message, setMessage] = useState("");
+    const [product, setProduct] = useState(null);
+    const [allProducts, setAllProducts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedImage, setSelectedImage] = useState(0);
+    const [isAdmin, setIsAdmin] = useState(false);
 
-    const [message, setMessage] =
-        useState("");
-
-
-    const [product, setProduct] =
-        useState(null);
-
-
-    const [allProducts, setAllProducts] =
-        useState([]);
-
-
-    const [loading, setLoading] =
-        useState(true);
-
-
-    const [selectedImage, setSelectedImage] =
-        useState(0);
-
-
-    const [isAdmin, setIsAdmin] =
-        useState(false);
-
-
-    const { id } =
-        useParams();
-
-
-    const navigate =
-        useNavigate();
+    const { id } = useParams();
+    const navigate = useNavigate();
 
 
     // =====================================================
@@ -53,47 +29,30 @@ export default function ProductDetails() {
 
         try {
 
-            const user =
-                JSON.parse(
-                    localStorage.getItem("user") || "null"
-                );
-
+            const user = JSON.parse(
+                localStorage.getItem("user") || "null"
+            );
 
             const admin =
-                user?.role
-                    ?.toString()
-                    .toUpperCase() === "ADMIN";
+                user?.role?.toString().toUpperCase() === "ADMIN";
 
-
-            console.log(
-                "PRODUCT DETAILS USER:",
-                user
-            );
-
-            console.log(
-                "PRODUCT DETAILS ADMIN:",
-                admin
-            );
-
+            console.log("PRODUCT DETAILS USER:", user);
+            console.log("PRODUCT DETAILS ADMIN:", admin);
 
             setIsAdmin(admin);
 
         } catch (error) {
 
-            console.error(
-                "Admin check error:",
-                error
-            );
+            console.error("Admin check error:", error);
 
             setIsAdmin(false);
-
         }
 
     }, []);
 
 
     // =====================================================
-    // GET PRODUCTS FROM SPRING BOOT + MYSQL
+    // LOAD PRODUCTS
     // =====================================================
 
     useEffect(() => {
@@ -109,19 +68,7 @@ export default function ProductDetails() {
 
             setLoading(true);
 
-
-            const response =
-                await getProducts();
-
-
-            /*
-                Axios normally returns:
-
-                {
-                    data: [...]
-                }
-            */
-
+            const response = await getProducts();
 
             const data =
                 Array.isArray(response?.data)
@@ -130,29 +77,29 @@ export default function ProductDetails() {
                         ? response
                         : [];
 
-
             console.log(
-                "Products from Spring Boot:",
+                "PRODUCT DETAILS ALL PRODUCTS:",
                 data
             );
 
+            const foundProduct = data.find(
+                item =>
+                    String(item.id) === String(id)
+            );
+
+            console.log(
+                "PRODUCT DETAILS FOUND PRODUCT:",
+                foundProduct
+            );
+
+            console.log(
+                "PRODUCT DETAILS DATABASE IMAGES:",
+                foundProduct?.images
+            );
 
             setAllProducts(data);
-
-
-            const foundProduct =
-                data.find(
-                    item =>
-                        String(item.id) ===
-                        String(id)
-                );
-
-
             setProduct(foundProduct || null);
-
-
             setSelectedImage(0);
-
 
         } catch (error) {
 
@@ -166,9 +113,185 @@ export default function ProductDetails() {
         } finally {
 
             setLoading(false);
+        }
+    };
 
+
+    // =====================================================
+    // DATABASE IMAGE URL
+    // =====================================================
+
+    const getDatabaseImageUrl = (image) => {
+
+        if (!image) {
+            return "";
         }
 
+
+        // -------------------------------------------------
+        // ProductImage object
+        // -------------------------------------------------
+
+        if (typeof image === "object") {
+
+            const imageId =
+                image.id ??
+                image.imageId ??
+                image.productImageId;
+
+            if (
+                imageId !== undefined &&
+                imageId !== null
+            ) {
+
+                return `${BACKEND_URL}/api/products/images/${imageId}`;
+            }
+
+            return "";
+        }
+
+
+        // -------------------------------------------------
+        // Numeric image ID
+        // -------------------------------------------------
+
+        if (typeof image === "number") {
+
+            return `${BACKEND_URL}/api/products/images/${image}`;
+        }
+
+
+        // -------------------------------------------------
+        // String image
+        // -------------------------------------------------
+
+        if (typeof image === "string") {
+
+            const trimmed = image.trim();
+
+            if (!trimmed) {
+                return "";
+            }
+
+
+            // Already complete URL
+
+            if (
+                trimmed.startsWith("http://") ||
+                trimmed.startsWith("https://")
+            ) {
+
+                return trimmed;
+            }
+
+
+            // Backend API path
+
+            if (trimmed.startsWith("/api/")) {
+
+                return `${BACKEND_URL}${trimmed}`;
+            }
+
+
+            // Old uploads path
+
+            if (trimmed.startsWith("/uploads/")) {
+
+                return `${BACKEND_URL}${trimmed}`;
+            }
+
+
+            // Local/public frontend image
+
+            if (trimmed.startsWith("/")) {
+
+                return trimmed;
+            }
+
+
+            return trimmed;
+        }
+
+
+        return "";
+    };
+
+
+    // =====================================================
+    // GET PRODUCT IMAGE URLS
+    // =====================================================
+
+    const getProductImages = (currentProduct) => {
+
+        if (!currentProduct) {
+            return [];
+        }
+
+
+        // -------------------------------------------------
+        // NEW DATABASE IMAGES
+        // -------------------------------------------------
+
+        if (
+            Array.isArray(currentProduct.images) &&
+            currentProduct.images.length > 0
+        ) {
+
+            const databaseImages =
+                currentProduct.images
+                    .map(image =>
+                        getDatabaseImageUrl(image)
+                    )
+                    .filter(Boolean);
+
+            if (databaseImages.length > 0) {
+
+                return databaseImages;
+            }
+        }
+
+
+        // -------------------------------------------------
+        // OLD image ARRAY
+        // -------------------------------------------------
+
+        if (
+            Array.isArray(currentProduct.image)
+        ) {
+
+            const oldImages =
+                currentProduct.image
+                    .map(image =>
+                        getDatabaseImageUrl(image)
+                    )
+                    .filter(Boolean);
+
+            if (oldImages.length > 0) {
+
+                return oldImages;
+            }
+        }
+
+
+        // -------------------------------------------------
+        // OLD SINGLE image
+        // -------------------------------------------------
+
+        if (currentProduct.image) {
+
+            const oldImage =
+                getDatabaseImageUrl(
+                    currentProduct.image
+                );
+
+            if (oldImage) {
+
+                return [oldImage];
+            }
+        }
+
+
+        return [];
     };
 
 
@@ -178,32 +301,18 @@ export default function ProductDetails() {
 
     const handleDelete = async () => {
 
-        if (!isAdmin) {
-
+        if (!isAdmin || !product) {
             return;
-
         }
-
-
-        if (!product) {
-
-            return;
-
-        }
-
 
         const confirmed =
             window.confirm(
                 `Are you sure you want to delete "${product.name}"?`
             );
 
-
         if (!confirmed) {
-
             return;
-
         }
-
 
         try {
 
@@ -212,21 +321,13 @@ export default function ProductDetails() {
                 product.id
             );
 
-
-            await deleteProduct(
-                product.id
-            );
-
+            await deleteProduct(product.id);
 
             alert(
                 "Product deleted successfully"
             );
 
-
-            // Go back to home
-
             navigate("/");
-
 
         } catch (error) {
 
@@ -235,19 +336,15 @@ export default function ProductDetails() {
                 error
             );
 
-
             console.error(
                 "Server response:",
                 error.response?.data
             );
 
-
             alert(
                 "Failed to delete product"
             );
-
         }
-
     };
 
 
@@ -257,38 +354,21 @@ export default function ProductDetails() {
 
     const handleEdit = () => {
 
-        if (!isAdmin) {
-
+        if (!isAdmin || !product) {
             return;
-
         }
-
-
-        if (!product) {
-
-            return;
-
-        }
-
 
         console.log(
             "Editing product:",
             product
         );
 
-
-        // Save product
-
         localStorage.setItem(
             "editingProduct",
             JSON.stringify(product)
         );
 
-
-        // Open admin page
-
         navigate("/admin");
-
     };
 
 
@@ -300,18 +380,14 @@ export default function ProductDetails() {
 
         return (
 
-            <div
-                className="product-loading"
-            >
+            <div className="product-loading">
 
                 <h2>
                     Loading product...
                 </h2>
 
             </div>
-
         );
-
     }
 
 
@@ -323,29 +399,22 @@ export default function ProductDetails() {
 
         return (
 
-            <div
-                className="product-not-found"
-            >
+            <div className="product-not-found">
 
                 <h2>
                     Product not found
                 </h2>
-
 
                 <button
                     onClick={() =>
                         navigate("/")
                     }
                 >
-
                     Go Home
-
                 </button>
 
             </div>
-
         );
-
     }
 
 
@@ -353,109 +422,13 @@ export default function ProductDetails() {
     // PRODUCT IMAGES
     // =====================================================
 
-    let productImages = [];
+    const productImages =
+        getProductImages(product);
 
-
-    if (
-        Array.isArray(
-            product.image
-        )
-    ) {
-
-        productImages =
-            product.image.filter(
-                image =>
-                    typeof image === "string" &&
-                    image.trim() !== ""
-            );
-
-    }
-
-    else if (
-        typeof product.image === "string" &&
-        product.image.trim() !== ""
-    ) {
-
-        const imageString =
-            product.image.trim();
-
-
-        try {
-
-            const parsedImages =
-                JSON.parse(
-                    imageString
-                );
-
-
-            if (
-                Array.isArray(
-                    parsedImages
-                )
-            ) {
-
-                productImages =
-                    parsedImages.filter(
-                        image =>
-                            typeof image === "string" &&
-                            image.trim() !== ""
-                    );
-
-            }
-
-            else {
-
-                productImages = [
-                    imageString
-                ];
-
-            }
-
-        } catch (error) {
-
-            /*
-                Normal image URL
-            */
-
-            if (
-                imageString.includes(",")
-            ) {
-
-                productImages =
-                    imageString
-                        .split(",")
-                        .map(
-                            image =>
-                                image.trim()
-                        )
-                        .filter(Boolean);
-
-            } else {
-
-                productImages = [
-                    imageString
-                ];
-
-            }
-
-        }
-
-    }
-
-
-    // =====================================================
-    // FALLBACK IMAGE
-    // =====================================================
-
-    if (
-        productImages.length === 0
-    ) {
-
-        productImages = [
-            "/placeholder.png"
-        ];
-
-    }
+    console.log(
+        "FINAL PRODUCT IMAGES:",
+        productImages
+    );
 
 
     // =====================================================
@@ -469,17 +442,20 @@ export default function ProductDetails() {
 
                     String(
                         item.subcategory || ""
-                    ).trim().toLowerCase()
+                    )
+                        .trim()
+                        .toLowerCase()
                     ===
                     String(
                         product.subcategory || ""
-                    ).trim().toLowerCase()
+                    )
+                        .trim()
+                        .toLowerCase()
 
                     &&
 
                     String(item.id) !==
                     String(product.id)
-
             )
             .slice(0, 4);
 
@@ -489,15 +465,10 @@ export default function ProductDetails() {
     // =====================================================
 
     const price =
-        Number(
-            product.price
-        ) || 0;
-
+        Number(product.price) || 0;
 
     const offerprice =
-        Number(
-            product.offerprice
-        ) || 0;
+        Number(product.offerprice) || 0;
 
 
     // =====================================================
@@ -510,10 +481,7 @@ export default function ProductDetails() {
 
             ? Math.round(
                 (
-                    (
-                        price -
-                        offerprice
-                    ) /
+                    (price - offerprice) /
                     price
                 ) * 100
             )
@@ -529,18 +497,15 @@ export default function ProductDetails() {
 
         addToCart(product);
 
-
         setMessage(
             "Product added to cart!"
         );
-
 
         setTimeout(() => {
 
             setMessage("");
 
         }, 2000);
-
     };
 
 
@@ -550,113 +515,114 @@ export default function ProductDetails() {
 
     return (
 
-        <div
-            className="product-details-page"
-        >
+        <div className="product-details-page">
 
 
             {/* =================================================
                 MAIN PRODUCT
             ================================================= */}
 
-            <div
-                className="product-details-container"
-            >
+            <div className="product-details-container">
 
 
                 {/* =================================================
                     LEFT
                 ================================================= */}
 
-                <div
-                    className="product-left"
-                >
+                <div className="product-left">
 
 
                     {/* THUMBNAILS */}
 
-                    <div
-                        className="product-thumbnails"
-                    >
+                    <div className="product-thumbnails">
 
-                        {productImages.map(
-                            (
-                                image,
-                                index
-                            ) => (
+                        {productImages.length > 0 &&
 
-                                <div
+                            productImages.map(
+                                (
+                                    image,
+                                    index
+                                ) => (
 
-                                    key={index}
+                                    <div
+                                        key={index}
 
-                                    className={
-                                        selectedImage === index
-                                            ? "thumbnail active"
-                                            : "thumbnail"
-                                    }
-
-                                    onClick={() =>
-                                        setSelectedImage(
-                                            index
-                                        )
-                                    }
-
-                                >
-
-                                    <img
-                                        src={image}
-                                        alt={
-                                            product.name
+                                        className={
+                                            selectedImage === index
+                                                ? "thumbnail active"
+                                                : "thumbnail"
                                         }
 
-                                        onError={(
-                                            event
-                                        ) => {
+                                        onClick={() =>
+                                            setSelectedImage(
+                                                index
+                                            )
+                                        }
+                                    >
 
-                                            event.currentTarget.src =
-                                                "/placeholder.png";
+                                        <img
+                                            src={image}
 
-                                        }}
+                                            alt={
+                                                product.name
+                                            }
 
-                                    />
+                                            onError={(event) => {
 
-                                </div>
+                                                console.error(
+                                                    "PRODUCT THUMBNAIL IMAGE FAILED:",
+                                                    image
+                                                );
 
+                                                event.currentTarget.style.display =
+                                                    "none";
+                                            }}
+                                        />
+
+                                    </div>
+                                )
                             )
-                        )}
+                        }
 
                     </div>
 
 
                     {/* MAIN IMAGE */}
 
-                    <div
-                        className="product-main-image"
-                    >
+                    <div className="product-main-image">
 
-                        <img
+                        {productImages.length > 0 ? (
 
-                            src={
-                                productImages[
-                                    selectedImage
-                                ] ||
-                                "/placeholder.png"
-                            }
+                            <img
+                                src={
+                                    productImages[
+                                        selectedImage
+                                    ]
+                                }
 
-                            alt={
-                                product.name
-                            }
+                                alt={
+                                    product.name
+                                }
 
-                            onError={(
-                                event
-                            ) => {
+                                onError={(event) => {
 
-                                event.currentTarget.src =
-                                    "/placeholder.png";
+                                    console.error(
+                                        "PRODUCT MAIN IMAGE FAILED:",
+                                        productImages[selectedImage]
+                                    );
 
-                            }}
+                                    event.currentTarget.style.display =
+                                        "none";
+                                }}
+                            />
 
-                        />
+                        ) : (
+
+                            <div className="product-no-image">
+                                No Image
+                            </div>
+
+                        )}
 
                     </div>
 
@@ -667,9 +633,7 @@ export default function ProductDetails() {
                     RIGHT
                 ================================================= */}
 
-                <div
-                    className="product-right"
-                >
+                <div className="product-right">
 
 
                     {/* PRODUCT NAME */}
@@ -679,17 +643,11 @@ export default function ProductDetails() {
                     </h1>
 
 
-                    {/* =================================================
-                        PRICE
-                    ================================================= */}
+                    {/* PRICE */}
 
-                    <div
-                        className="product-price"
-                    >
+                    <div className="product-price">
 
-                        <span
-                            className="offer-pricemain"
-                        >
+                        <span className="offer-pricemain">
 
                             ₹
                             {
@@ -705,9 +663,7 @@ export default function ProductDetails() {
                         {offerprice > 0 &&
                             price > 0 && (
 
-                                <span
-                                    className="original-price"
-                                >
+                                <span className="original-price">
 
                                     ₹
                                     {price}
@@ -719,9 +675,7 @@ export default function ProductDetails() {
 
                         {discount > 0 && (
 
-                            <span
-                                className="discount"
-                            >
+                            <span className="discount">
 
                                 {discount}% OFF
 
@@ -735,14 +689,11 @@ export default function ProductDetails() {
                     <hr />
 
 
-                    {/* =================================================
-                        DESCRIPTION
-                    ================================================= */}
+                    {/* DESCRIPTION */}
 
                     <h3>
                         Product Description
                     </h3>
-
 
                     <p>
                         {
@@ -752,15 +703,11 @@ export default function ProductDetails() {
                     </p>
 
 
-                    {/* =================================================
-                        ADMIN EDIT / DELETE
-                    ================================================= */}
+                    {/* ADMIN ACTIONS */}
 
                     {isAdmin && (
 
-                        <div
-                            className="product-admin-actions"
-                        >
+                        <div className="product-admin-actions">
 
                             <button
                                 type="button"
@@ -800,15 +747,10 @@ export default function ProductDetails() {
                     )}
 
 
-                    {/* =================================================
-                        CART / BUY BUTTONS
-                    ================================================= */}
+                    {/* CART / BUY */}
 
-                    <div
-                        className="product-buttons"
-                    >
+                    <div className="product-buttons">
 
-                        {/* ADD TO CART */}
 
                         <button
                             className="cart-button"
@@ -823,20 +765,14 @@ export default function ProductDetails() {
                         </button>
 
 
-                        {/* BUY NOW */}
-
                         <button
                             className="buy-button"
 
                             onClick={() => {
 
-                                addToCart(
-                                    product
-                                );
+                                addToCart(product);
 
-                                navigate(
-                                    "/cart"
-                                );
+                                navigate("/cart");
 
                             }}
                         >
@@ -848,15 +784,11 @@ export default function ProductDetails() {
                     </div>
 
 
-                    {/* =================================================
-                        NOTIFICATION
-                    ================================================= */}
+                    {/* NOTIFICATION */}
 
                     {message && (
 
-                        <div
-                            className="cart-notification"
-                        >
+                        <div className="cart-notification">
 
                             {message}
 
@@ -873,115 +805,33 @@ export default function ProductDetails() {
                 RELATED PRODUCTS
             ================================================= */}
 
-            <div
-                className="related-products"
-            >
+            <div className="related-products">
 
                 <h2>
                     Related Products
                 </h2>
 
 
-                <div
-                    className="related-row"
-                >
+                <div className="related-row">
 
                     {relatedProducts.map(
                         relatedProduct => {
 
-                            // =================================================
-                            // RELATED IMAGE
-                            // =================================================
-
-                            let relatedImages =
-                                [];
-
-
-                            if (
-                                Array.isArray(
-                                    relatedProduct.image
-                                )
-                            ) {
-
-                                relatedImages =
-                                    relatedProduct.image;
-
-                            }
-
-                            else if (
-                                typeof relatedProduct.image ===
-                                    "string" &&
-                                relatedProduct.image.trim() !== ""
-                            ) {
-
-                                const imageString =
-                                    relatedProduct.image.trim();
-
-
-                                try {
-
-                                    const parsed =
-                                        JSON.parse(
-                                            imageString
-                                        );
-
-
-                                    if (
-                                        Array.isArray(
-                                            parsed
-                                        )
-                                    ) {
-
-                                        relatedImages =
-                                            parsed;
-
-                                    }
-
-                                    else {
-
-                                        relatedImages = [
-                                            imageString
-                                        ];
-
-                                    }
-
-                                } catch {
-
-                                    if (
-                                        imageString.includes(",")
-                                    ) {
-
-                                        relatedImages =
-                                            imageString
-                                                .split(",")
-                                                .map(
-                                                    image =>
-                                                        image.trim()
-                                                )
-                                                .filter(Boolean);
-
-                                    } else {
-
-                                        relatedImages = [
-                                            imageString
-                                        ];
-
-                                    }
-
-                                }
-
-                            }
+                            const relatedImages =
+                                getProductImages(
+                                    relatedProduct
+                                );
 
 
                             const relatedImage =
                                 relatedImages.length > 0
                                     ? relatedImages[0]
-                                    : "/placeholder.png";
+                                    : "";
 
 
-                            // =================================================
+                            // -----------------------------------------
                             // RELATED PRICE
-                            // =================================================
+                            // -----------------------------------------
 
                             const relatedPrice =
                                 Number(
@@ -995,9 +845,9 @@ export default function ProductDetails() {
                                 ) || 0;
 
 
-                            // =================================================
+                            // -----------------------------------------
                             // RELATED DISCOUNT
-                            // =================================================
+                            // -----------------------------------------
 
                             const relatedDiscount =
                                 relatedPrice > 0 &&
@@ -1019,7 +869,6 @@ export default function ProductDetails() {
                             return (
 
                                 <div
-
                                     className="related-card"
 
                                     key={
@@ -1031,58 +880,61 @@ export default function ProductDetails() {
                                             `/product/${relatedProduct.id}`
                                         )
                                     }
-
                                 >
 
 
                                     {/* IMAGE */}
 
-                                    <img
+                                    {relatedImage ? (
 
-                                        src={
-                                            relatedImage
-                                        }
+                                        <img
+                                            src={
+                                                relatedImage
+                                            }
 
-                                        alt={
-                                            relatedProduct.name
-                                        }
+                                            alt={
+                                                relatedProduct.name
+                                            }
 
-                                        onError={(
-                                            event
-                                        ) => {
+                                            onError={(event) => {
 
-                                            event.currentTarget.src =
-                                                "/placeholder.png";
+                                                console.error(
+                                                    "RELATED PRODUCT IMAGE FAILED:",
+                                                    relatedImage
+                                                );
 
-                                        }}
+                                                event.currentTarget.style.display =
+                                                    "none";
+                                            }}
+                                        />
 
-                                    />
+                                    ) : (
+
+                                        <div className="related-no-image">
+                                            No Image
+                                        </div>
+
+                                    )}
 
 
                                     {/* NAME */}
 
                                     <h3>
-
                                         {
                                             relatedProduct.name
                                         }
-
                                     </h3>
 
 
                                     {/* PRICE */}
 
-                                    <div
-                                        className="product-price"
-                                    >
+                                    <div className="product-price">
 
                                         {relatedOfferPrice > 0 ? (
 
                                             <>
 
-                                                <span
-                                                    className="offer-price"
-                                                >
+                                                <span className="offer-price">
 
                                                     ₹
                                                     {
@@ -1094,9 +946,7 @@ export default function ProductDetails() {
 
                                                 {relatedPrice > 0 && (
 
-                                                    <span
-                                                        className="original-price"
-                                                    >
+                                                    <span className="original-price">
 
                                                         ₹
                                                         {
@@ -1110,9 +960,7 @@ export default function ProductDetails() {
 
                                                 {relatedDiscount > 0 && (
 
-                                                    <span
-                                                        className="discount"
-                                                    >
+                                                    <span className="discount">
 
                                                         {
                                                             relatedDiscount
@@ -1126,9 +974,7 @@ export default function ProductDetails() {
 
                                         ) : (
 
-                                            <span
-                                                className="offer-price"
-                                            >
+                                            <span className="offer-price">
 
                                                 ₹
                                                 {
@@ -1142,9 +988,7 @@ export default function ProductDetails() {
                                     </div>
 
                                 </div>
-
                             );
-
                         }
                     )}
 
@@ -1153,7 +997,5 @@ export default function ProductDetails() {
             </div>
 
         </div>
-
     );
-
 }
